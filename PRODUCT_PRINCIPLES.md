@@ -69,7 +69,7 @@ Principe UX :
 
 L'arrimage ne justifie pas un écran de réglages général.
 
-Une icône commune peut représenter l'état de connexion. L'utilisateur doit pouvoir forcer une nouvelle détection et détacher un companion.
+Une icône commune peut représenter l'état de connexion. Pour le MVP, l'utilisateur doit pouvoir forcer une nouvelle détection. Le désarrimage n'est pas encore un cas produit à gérer.
 
 ## 7. Identité visuelle commune, vocabulaire étendu
 
@@ -136,3 +136,33 @@ Cette position distingue clairement :
 Shopping List doit reprendre le même squelette : identité à gauche, Home contextuel juste après, navigation métier à droite.
 
 Le layout détaillé du planner dans Home n'est pas encore fixé. Seul le routage vers le planner Home depuis les companions est acté. Le layout du planner reste expérimental jusqu'à un arbitrage ultérieur.
+
+
+## Provenance des besoins issus de CookiGram
+
+Lorsqu'un besoin d'achat provient de CookiGram, Shopping List peut conserver une métadonnée de provenance optionnelle et durable.
+
+Quand CookiGram est installé et arrimé, cette provenance peut être affichée dans la liste et servir de lien vers la recette source.
+
+Exemples :
+
+- `Source : Ratatouille` ;
+- plusieurs sources si un article résulte d'une consolidation de besoins issus de plusieurs recettes.
+
+Si Shopping List est utilisée seule et qu'aucune provenance n'existe, aucune UI CookiGram ne doit apparaître artificiellement.
+
+La présence de la métadonnée et son affichage sont deux choses distinctes : la donnée peut être conservée dans le modèle, tandis que l'UI ne l'expose que lorsqu'elle apporte une valeur dans la configuration actuelle.
+
+## MVP d'arrimage : activation, pas cycle de vie complet
+
+Le premier prototype gère :
+
+1. la découverte ;
+2. la proposition d'arrimage ;
+3. le consentement ;
+4. la mémorisation de l'arrimage ;
+5. l'usage enrichi après arrimage.
+
+Le désarrimage, la révocation et les conséquences métier d'un détachement sont volontairement hors scope du MVP.
+
+> Invariant MVP : l'arrimage est un chemin d'activation, pas encore un cycle de vie complet.
