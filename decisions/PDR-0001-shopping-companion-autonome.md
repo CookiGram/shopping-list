@@ -45,7 +45,7 @@ Lorsque Shopping List est présente et arrimée, elle devient le provider shoppi
 
 L'expérience arrimée doit apporter davantage que le fallback local CookiGram et peut exploiter toute la richesse du domaine Shopping List.
 
-Cette substitution reste réversible : l'absence ou le détachement de Shopping List fait revenir CookiGram à son capability shopping culinaire locale.
+Pour le MVP, la substitution est activée par l'arrimage. Le désarrimage et les conséquences d'un détachement sont hors scope et seront arbitrés ultérieurement.
 
 ## Langage visuel et iconographie
 
@@ -71,6 +71,8 @@ L'arrimage entre applications suit le pattern :
 4. usage transparent ensuite ;
 5. redétection manuelle toujours possible.
 
+Le désarrimage n'est pas requis dans le MVP.
+
 ## Conséquences
 
 - aucune dépendance obligatoire à CookiGram ;
@@ -80,6 +82,7 @@ L'arrimage entre applications suit le pattern :
 - les progrès de Shopping List peuvent améliorer le fallback natif CookiGram de manière sélective ;
 - pas d'écran de réglages général créé uniquement pour l'arrimage ;
 - une icône d'arrimage discrète peut exposer l'état de composition ;
+- le MVP couvre l'activation et l'usage de l'arrimage, pas encore sa révocation ;
 - le POC privilégie un contrat simple et robuste avant toute sophistication ;
 - l'intention d'achat reste distincte des produits marchands externes ;
 - l'iconographie non culinaire reste propre à Shopping List.
