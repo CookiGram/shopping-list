@@ -96,3 +96,25 @@ Une évolution Shopping List est conforme si elle :
 6. permet aux avancées pertinentes d'améliorer CookiGram sans élargir son périmètre hors cuisine ;
 7. rend l'expérience arrimée plus riche que le shopping natif CookiGram ;
 8. maintient la frontière visuelle entre assets culinaires communs et assets Shopping List hors cuisine.
+
+
+## Contrat UX de navigation entre companions
+
+Le layout des companions CookiGram et Shopping List est stabilisé autour d'un même squelette :
+
+```text
+[ App ] [ Home si arrimé ]                         [ navigation métier ]
+```
+
+Décisions :
+
+- le bouton Home apparaît uniquement lorsque Home est présent et arrimé ;
+- il est placé immédiatement à droite de l'identité de l'application ;
+- il n'est pas intégré au groupe d'icônes métier ;
+- les icônes métier habituelles restent groupées à droite afin de préserver les repères ;
+- dans CookiGram, le livre de recettes reste dans CookiGram ;
+- le panier cible Shopping List lorsqu'elle est arrimée, sinon le shopping culinaire natif ;
+- le planner cible Home lorsqu'il est arrimé ;
+- le layout interne du planner Home n'est pas encore décidé et reste expérimental.
+
+Cette règle doit rester cohérente dans CookiGram et Shopping List afin que le passage d'une brique à l'autre ne change pas la grammaire de navigation.
