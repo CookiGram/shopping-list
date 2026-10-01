@@ -32,7 +32,34 @@ Les fonctions de synchronisation ou de partage enrichissent cette base mais ne d
 
 CookiGram peut produire des besoins d'achat. Home peut partager ou synchroniser la liste. Mais Shopping List reste propriétaire de l'UX de liste, de l'organisation des articles et de l'état acheté/non acheté.
 
-## 5. Arrimage explicite et discret
+## 5. Shopping List doit faire progresser CookiGram de deux manières
+
+Le développement de Shopping List doit bénéficier à CookiGram par deux voies complémentaires.
+
+### Amélioration native
+
+Lorsqu'une mécanique shopping générique améliore directement l'usage culinaire sans élargir le périmètre de CookiGram, elle doit pouvoir être réutilisée ou adaptée dans le module shopping natif CookiGram.
+
+Exemples :
+
+- consolidation de doublons ;
+- agrégation de quantités ;
+- catégorisation culinaire ;
+- ergonomie tactile ;
+- état acheté/restant ;
+- persistance locale robuste.
+
+Cette voie doit rendre CookiGram meilleur même lorsque Shopping List n'est pas installée.
+
+### Arrimage complet
+
+Lorsque Shopping List est présente et arrimée, elle devient le provider shopping actif de CookiGram et remplace sa capability shopping native pour les parcours concernés.
+
+Cette voie doit apporter plus de valeur que le module natif : expérience d'achat complète, liste générale, logique avancée, continuité d'état et futures capacités propres au domaine shopping.
+
+Le développement de Shopping List ne doit donc jamais avoir pour objectif de maintenir artificiellement CookiGram dans un état inférieur. Les progrès utiles au culinaire peuvent remonter dans CookiGram ; la richesse propre au domaine shopping reste fournie par l'arrimage.
+
+## 6. Arrimage explicite et discret
 
 Lorsqu'un companion compatible est détecté, Shopping List peut proposer un arrimage.
 
@@ -44,7 +71,17 @@ L'arrimage ne justifie pas un écran de réglages général.
 
 Une icône commune peut représenter l'état de connexion. L'utilisateur doit pouvoir forcer une nouvelle détection et détacher un companion.
 
-## 6. Home enrichit, il ne remplace pas le local
+## 7. Identité visuelle commune, vocabulaire étendu
+
+Shopping List reprend les codes visuels pertinents de CookiGram afin que les deux applications forment un même écosystème.
+
+Les icônes culinaires existantes de CookiGram doivent être réutilisées lorsqu'elles conviennent, plutôt que recréées indépendamment.
+
+Shopping List peut créer et posséder des icônes supplémentaires pour les achats hors cuisine : entretien, hygiène, animaux, pharmacie, maison ou autres catégories générales.
+
+Ces extensions restent propres à Shopping List et ne doivent pas être réimportées dans CookiGram sauf si elles deviennent réellement pertinentes pour la fonction culinaire.
+
+## 8. Home enrichit, il ne remplace pas le local
 
 Avec Home, Shopping List peut devenir collaborative :
 
@@ -56,19 +93,19 @@ Avec Home, Shopping List peut devenir collaborative :
 
 Sans Home, la PWA reste pleinement fonctionnelle en local.
 
-## 7. Intention d'achat distincte du produit marchand
+## 9. Intention d'achat distincte du produit marchand
 
 La liste représente ce qu'il faut acheter, pas nécessairement un SKU marchand.
 
 Les intégrations futures avec Carrefour, Leclerc, Auchan ou d'autres fournisseurs doivent résoudre une intention d'achat vers un produit externe sans rendre ce produit externe canonique.
 
-## 8. Prototyper avant de généraliser
+## 10. Prototyper avant de généraliser
 
 Le premier objectif est de valider le modèle de companion et l'arrimage dual-PWA avec CookiGram.
 
 Ne pas transformer le POC en plateforme générale avant d'avoir validé l'usage réel.
 
-## 9. Le Product Owner comme utilisateur n°1
+## 11. Le Product Owner comme utilisateur n°1
 
 Les arbitrages privilégient la fluidité réelle de la liste quotidienne plutôt que la richesse théorique des fonctionnalités.
 
