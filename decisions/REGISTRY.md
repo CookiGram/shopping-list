@@ -15,6 +15,7 @@ Ce registre donne l'état canonique des décisions produit structurantes de Shop
 | ID | Titre | Statut | Portée | Remplace |
 |---|---|---|---|---|
 | PDR-0001 | Shopping List comme companion autonome | accepted | produit / UX / arrimage | — |
+| PDR-0002 | Provenance CookiGram et scope MVP de l'arrimage | accepted | provenance / arrimage / MVP | — |
 
 ## Règle de gouvernance
 
