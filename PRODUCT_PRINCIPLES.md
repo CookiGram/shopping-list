@@ -110,3 +110,29 @@ Ne pas transformer le POC en plateforme générale avant d'avoir validé l'usage
 Les arbitrages privilégient la fluidité réelle de la liste quotidienne plutôt que la richesse théorique des fonctionnalités.
 
 > Règle de revue : un audit fonctionnel de Shopping List doit vérifier chaque évolution contre ces principes avant de conclure qu'elle est conforme au produit.
+
+
+## Navigation companion stable et Home contextuel
+
+CookiGram et Shopping List partagent un même principe de layout pour leur header :
+
+```text
+[ identité de l'app ] [ Home si présent ]                 [ navigation métier ]
+```
+
+Dans CookiGram, la navigation métier habituelle reste groupée à droite et conserve ses repères :
+
+- livre de recettes -> CookiGram ;
+- panier -> module shopping natif ou Shopping List si elle est arrimée ;
+- planner -> comportement local tant que Home n'est pas présent, puis planner Home lorsque Home est arrimé.
+
+Le bouton Home n'est pas une quatrième action métier. Il est placé immédiatement à droite de l'identité de l'application et apparaît seulement lorsque Home est détecté et arrimé.
+
+Cette position distingue clairement :
+
+- **le contexte d'écosystème** : retour vers Home ;
+- **la navigation métier** : actions propres à l'application.
+
+Shopping List doit reprendre le même squelette : identité à gauche, Home contextuel juste après, navigation métier à droite.
+
+Le layout détaillé du planner dans Home n'est pas encore fixé. Seul le routage vers le planner Home depuis les companions est acté. Le layout du planner reste expérimental jusqu'à un arbitrage ultérieur.
