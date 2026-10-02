@@ -7,6 +7,18 @@
  * CookiGram class names (.shopping-*, .quantity-chip, .suggestion).
  */
 
+/**
+ * Integer quantity for row steppers (#7): leading digits of the stored
+ * value, minimum 1. Blank, missing or non-numeric quantities read as 1,
+ * so legacy free-text quantities are never destroyed, only stepped over.
+ * Pure (unit-tested); storage keeps the plain string via store.setQty.
+ */
+export const parseQtyInt = (value) => {
+  const match = String(value ?? "").trim().match(/^(\d+)/);
+  const n = match ? Number.parseInt(match[1], 10) : NaN;
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+};
+
 function el(tag, className, attrs = {}) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -32,6 +44,28 @@ export function ingredientIcon(iconPath, name) {
 }
 
 /** Single-bucket shopping row: [checkbox] [icon] [name + qty] [heart]. */
+/** Quantity stepper (− value +); − is disabled at the 1 minimum. */
+export function qtyStepper(id, name, qtyInt) {
+  const group = el("div", "qty-stepper", { role: "group", "aria-label": `Quantité de ${name}` });
+  const dec = el("button", "qty-btn", {
+    type: "button",
+    "data-qty-dec": id,
+    "aria-label": `Diminuer la quantité de ${name}`,
+  });
+  dec.textContent = "−";
+  if (qtyInt <= 1) dec.disabled = true;
+  const val = el("span", "qty-value", { "aria-hidden": "true" });
+  val.textContent = String(qtyInt);
+  const inc = el("button", "qty-btn", {
+    type: "button",
+    "data-qty-inc": id,
+    "aria-label": `Augmenter la quantité de ${name}`,
+  });
+  inc.textContent = "+";
+  group.append(dec, val, inc);
+  return group;
+}
+
 export function checkboxRow({ id, name, qty = "", icon = "", checked = false, favorite = false, essential = null }) {
   const li = el("li", "shopping-item" + (checked ? " shopping-item--checked" : ""), {
     "data-shopping-item": id,
@@ -51,16 +85,21 @@ export function checkboxRow({ id, name, qty = "", icon = "", checked = false, fa
   const strong = el("strong");
   strong.textContent = name;
   copy.appendChild(strong);
-  if (qty) {
+  // The stepper shows integer quantities; free-text legacy quantities
+  // (no writer today) stay visible so no data is hidden.
+  const qtyText = String(qty ?? "").trim();
+  if (qtyText && !/^\d+$/.test(qtyText)) {
     const small = el("small");
-    small.textContent = qty;
+    small.textContent = qtyText;
     copy.appendChild(small);
   }
 
-  row.append(cb, iconEl, copy, heartButton(id, favorite));
+  // #7 row order: checkbox, copy, stepper, pin, heart.
+  row.append(cb, iconEl, copy, qtyStepper(id, name, parseQtyInt(qtyText)));
   // essential === null hides the pin (only when the caller omits it;
   // custom items are markable via their stable name: key).
   if (essential !== null) row.appendChild(essentialButton(id, essential));
+  row.appendChild(heartButton(id, favorite));
   li.appendChild(row);
   return li;
 }

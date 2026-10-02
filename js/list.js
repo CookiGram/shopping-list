@@ -1,5 +1,5 @@
 /* Shopping List v0 — list UI (Lane F).
- * Renders store items grouped by aisle: [checkbox] [icon] [name + qty + tags] [heart] [pin].
+ * Renders store items grouped by aisle: [checkbox] [icon] [name + tags] [stepper] [pin] [heart].
  * Pure DOM + grouping; no search ranking, no storage writes of its own.
  *
  * Consumed contracts (parallel lanes; all optional at runtime):
@@ -36,7 +36,7 @@ import {
   defaultAisleForCategory,
   normalizeKey,
 } from "./catalog.js";
-import { checkboxRow, aisleCard, emptyState } from "./components.js";
+import { checkboxRow, aisleCard, emptyState, parseQtyInt } from "./components.js";
 
 export const FALLBACK_AISLE = "À vérifier";
 export const STORE_KEY = "shopping-list:items:v1";
@@ -422,6 +422,31 @@ async function toggleFavorite(id, btn, explicitStore, onToggleFavorite, lookupIt
   emitAction({ type: "favorite", id, favorite: next });
 }
 
+async function stepQty(id, delta, btn, explicitStore, onStepQty, lookupItem) {
+  if (typeof onStepQty === "function") return onStepQty(id, delta, btn);
+  const store = await resolveStore(explicitStore);
+  if (typeof store?.setQty === "function") {
+    try {
+      const item = lookupItem?.(id) ?? store.getItem?.(id) ?? null;
+      const next = Math.max(1, parseQtyInt(item?.qty) + delta);
+      await store.setQty(id, String(next));
+      return;
+    } catch {
+      /* fall through to optimistic update */
+    }
+  }
+  const group = btn.closest?.(".qty-stepper");
+  const val = group?.querySelector?.(".qty-value");
+  const next = Math.max(1, parseQtyInt(val?.textContent) + delta);
+  if (val) val.textContent = String(next);
+  const dec = group?.querySelector?.("[data-qty-dec]");
+  if (dec) {
+    if (next <= 1) dec.setAttribute("disabled", "");
+    else dec.removeAttribute("disabled");
+  }
+  emitAction({ type: "qty", id, qty: next });
+}
+
 async function toggleEssential(id, btn, explicitStore, onToggleEssential, lookupItem) {
   const pressed = btn.getAttribute("aria-pressed") === "true";
   if (typeof onToggleEssential === "function") return onToggleEssential(id, !pressed, btn);
@@ -458,7 +483,7 @@ function activateTag(tag, id, btn, onTag) {
 /**
  * Mount a live list: initial render + store subscription + delegated events.
  * Options: {catalog, store, getItems, filter|getFilter, iconBase, count,
- *           onToggleCheck, onToggleFavorite, onToggleEssential, onTag}.
+ *           onToggleCheck, onToggleFavorite, onToggleEssential, onStepQty, onTag}.
  * Returns {unmount, refresh, setFilter, getCatalog}.
  */
 export function mountList(container, options = {}) {
@@ -471,6 +496,7 @@ export function mountList(container, options = {}) {
     onToggleCheck = null,
     onToggleFavorite = null,
     onToggleEssential = null,
+    onStepQty = null,
     onTag = null,
   } = options;
   let filter = options.filter ?? options.getFilter?.() ?? null;
@@ -547,6 +573,16 @@ export function mountList(container, options = {}) {
     const pin = event.target?.closest?.("[data-essential-toggle]");
     if (pin && container.contains(pin)) {
       toggleEssential(pin.getAttribute("data-essential-toggle"), pin, cachedStore ?? explicitStore, onToggleEssential, lookupItem);
+      return;
+    }
+    const dec = event.target?.closest?.("[data-qty-dec]");
+    if (dec && container.contains(dec) && !dec.disabled) {
+      stepQty(dec.getAttribute("data-qty-dec"), -1, dec, cachedStore ?? explicitStore, onStepQty, lookupItem);
+      return;
+    }
+    const inc = event.target?.closest?.("[data-qty-inc]");
+    if (inc && container.contains(inc)) {
+      stepQty(inc.getAttribute("data-qty-inc"), +1, inc, cachedStore ?? explicitStore, onStepQty, lookupItem);
       return;
     }
     const tag = event.target?.closest?.("[data-tag]");
