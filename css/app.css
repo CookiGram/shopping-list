@@ -622,18 +622,52 @@ main {
   background:var(--card);
   border:1px dashed var(--line);
   border-radius:var(--radius-lg);
-  padding:var(--space-4);
+  padding:var(--space-3);
+}
+
+/* Illustration-only empty state: the wrapper carries the state
+ * sentence (aria-label) and shows it as a discreet tooltip on
+ * hover/focus — hover-capable devices only, so touch stays clean. */
+.empty-state-tip {
+  position:relative;
+  display:inline-block;
+}
+
+.empty-state-tip::after {
+  content:attr(aria-label);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + var(--space-2));
+  transform:translateX(-50%);
+  max-width:220px;
+  padding:var(--space-1) var(--space-3);
+  border-radius:var(--radius-full);
+  background:var(--ink);
+  color:var(--paper);
+  font-size:.85rem;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+}
+
+@media (hover:hover) {
+  .empty-state-tip:hover::after {
+    opacity:1;
+  }
+}
+
+/* Ungated: :focus-visible never matches touch taps, so keyboard users
+ * get the tooltip on every device while touch stays clean. */
+.empty-state-tip:focus-visible::after {
+  opacity:1;
 }
 
 .empty-state-illustration {
   display:block;
   width:min(100%,200px);
   height:auto;
-  margin:0 auto var(--space-2);
+  margin:0 auto;
 }
-
-.empty-state p { margin:0 0 var(--space-2); }
-.empty-state p:last-child { margin-bottom:0; }
 
 .app-foot {
   margin-top:var(--space-6);

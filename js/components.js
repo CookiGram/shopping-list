@@ -256,18 +256,23 @@ export function historyRow(id, name) {
   return li;
 }
 
-/** Empty-list placeholder: illustration + one minimal line. */
+/** Empty-list placeholder: illustration only. The state sentence lives
+ * on the wrapper (role="img" + aria-label, single screen-reader source;
+ * the inner img is decorative) and doubles as the hover/focus tooltip
+ * text via CSS attr() — no visible text, no duplication. */
 export function emptyState() {
   const div = el("div", "empty-state", { "data-empty-state": "" });
+  const tip = el("span", "empty-state-tip", {
+    tabindex: "0",
+    role: "img",
+    "aria-label": "Votre liste est vide.",
+  });
   const img = el("img", "empty-state-illustration", {
     src: "./assets/illustrations/empty-basket.svg",
-    alt: "Panier vide",
+    alt: "",
   });
-  const p = el("p");
-  const strong = el("strong");
-  strong.textContent = "Votre liste est vide.";
-  p.appendChild(strong);
-  div.append(img, p);
+  tip.appendChild(img);
+  div.appendChild(tip);
   return div;
 }
 
