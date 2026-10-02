@@ -1,0 +1,809 @@
+{
+  "aisles": [
+    "Maison & entretien",
+    "Hygiène & beauté",
+    "Bébé & enfants",
+    "Animalerie"
+  ],
+  "bySlug": {
+    "liquide-vaisselle": 0,
+    "eponge": 1,
+    "essuie-tout": 2,
+    "sacs-poubelle": 3,
+    "papier-toilette": 4,
+    "lessive": 5,
+    "adoucissant": 6,
+    "pastilles-lave-vaisselle": 7,
+    "detartrant": 8,
+    "nettoyant-sols": 9,
+    "nettoyant-sdb": 10,
+    "nettoyant-vitres": 11,
+    "film-alimentaire": 12,
+    "mouchoirs": 13,
+    "savon": 14,
+    "gel-douche": 15,
+    "shampoing": 16,
+    "apres-shampoing": 17,
+    "dentifrice": 18,
+    "brosse-a-dents": 19,
+    "fil-dentaire": 20,
+    "bain-de-bouche": 21,
+    "deodorant": 22,
+    "creme-hydratante": 23,
+    "creme-solaire": 24,
+    "coton-a-demaquiller": 25,
+    "cotons-tiges": 26,
+    "desinfectant": 27,
+    "couches-bebe": 28,
+    "lait-infantile": 29,
+    "creme-change": 30,
+    "biberon": 31,
+    "croquettes-chat": 32,
+    "litiere-chat": 33,
+    "croquettes-chien": 34,
+    "friandises-chien": 35,
+    "allumettes": 36,
+    "lingettes-bebe": 37,
+    "ampoule-led": 38,
+    "pansements": 39,
+    "mousse-a-raser": 40,
+    "piles-aa": 41,
+    "rasoirs-jetables": 42,
+    "sacs-congelation": 43,
+    "sel-lave-vaisselle": 44,
+    "serviettes-hygieniques": 45,
+    "shampoing-bebe": 46,
+    "eau-de-javel": 47
+  },
+  "entries": [
+    {
+      "aliases": [
+        "liquide vaisselle",
+        "produit vaisselle",
+        "paic",
+        "détergent vaisselle"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Vaisselle",
+      "icon": "",
+      "name": "Liquide vaisselle",
+      "slug": "liquide-vaisselle",
+      "tags": [
+        "vaisselle",
+        "cuisine"
+      ]
+    },
+    {
+      "aliases": [
+        "éponge",
+        "éponges",
+        "éponge grattante"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Vaisselle",
+      "icon": "",
+      "name": "Éponges",
+      "slug": "eponge",
+      "tags": [
+        "vaisselle",
+        "cuisine"
+      ]
+    },
+    {
+      "aliases": [
+        "essuie-tout",
+        "sopalin",
+        "papier absorbant"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Consommables cuisine",
+      "icon": "",
+      "name": "Essuie-tout",
+      "slug": "essuie-tout",
+      "tags": [
+        "cuisine"
+      ]
+    },
+    {
+      "aliases": [
+        "sacs poubelle",
+        "sacs poubelles",
+        "sacs ordures",
+        "poubelle"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Consommables cuisine",
+      "icon": "",
+      "name": "Sacs poubelle",
+      "slug": "sacs-poubelle",
+      "tags": [
+        "cuisine",
+        "ménage"
+      ]
+    },
+    {
+      "aliases": [
+        "papier toilette",
+        "papier wc",
+        "pq",
+        "rouleaux wc"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Papier maison",
+      "icon": "",
+      "name": "Papier toilette",
+      "slug": "papier-toilette",
+      "tags": [
+        "wc",
+        "salle de bain"
+      ]
+    },
+    {
+      "aliases": [
+        "lessive",
+        "lessive liquide",
+        "lessive poudre",
+        "capsules lessive",
+        "detergent linge"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Linge",
+      "icon": "",
+      "name": "Lessive",
+      "slug": "lessive",
+      "tags": [
+        "linge"
+      ]
+    },
+    {
+      "aliases": [
+        "adoucissant",
+        "assouplissant",
+        "soupline"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Linge",
+      "icon": "",
+      "name": "Adoucissant",
+      "slug": "adoucissant",
+      "tags": [
+        "linge"
+      ]
+    },
+    {
+      "aliases": [
+        "pastilles lave-vaisselle",
+        "tablettes lave vaisselle",
+        "capsules lave-vaisselle"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Vaisselle",
+      "icon": "",
+      "name": "Pastilles lave-vaisselle",
+      "slug": "pastilles-lave-vaisselle",
+      "tags": [
+        "vaisselle"
+      ]
+    },
+    {
+      "aliases": [
+        "détartrant",
+        "anticalcaire",
+        "produit calcaire",
+        "vinaigre ménager"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Détartrant",
+      "slug": "detartrant",
+      "tags": [
+        "ménage",
+        "salle de bain"
+      ]
+    },
+    {
+      "aliases": [
+        "nettoyant sols",
+        "produit sols",
+        "serpillière liquide",
+        "nettoyant carrelage"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Nettoyant sols",
+      "slug": "nettoyant-sols",
+      "tags": [
+        "ménage"
+      ]
+    },
+    {
+      "aliases": [
+        "nettoyant salle de bain",
+        "produit salle de bain",
+        "nettoyant sanitaire",
+        "nettoyant douche"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Nettoyant salle de bain",
+      "slug": "nettoyant-sdb",
+      "tags": [
+        "ménage",
+        "salle de bain"
+      ]
+    },
+    {
+      "aliases": [
+        "nettoyant vitres",
+        "produit vitres",
+        "lave-vitres"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Nettoyant vitres",
+      "slug": "nettoyant-vitres",
+      "tags": [
+        "ménage"
+      ]
+    },
+    {
+      "aliases": [
+        "film alimentaire",
+        "film étirable",
+        "cellophane"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Consommables cuisine",
+      "icon": "",
+      "name": "Film alimentaire",
+      "slug": "film-alimentaire",
+      "tags": [
+        "cuisine"
+      ]
+    },
+    {
+      "aliases": [
+        "mouchoirs",
+        "mouchoirs papier",
+        "kleenex"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Papier maison",
+      "icon": "",
+      "name": "Mouchoirs",
+      "slug": "mouchoirs",
+      "tags": []
+    },
+    {
+      "aliases": [
+        "savon",
+        "savonnette",
+        "pain de savon",
+        "savon de marseille"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Corps",
+      "icon": "",
+      "name": "Savon",
+      "slug": "savon",
+      "tags": [
+        "douche"
+      ]
+    },
+    {
+      "aliases": [
+        "gel douche",
+        "gel corps",
+        "douche"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Corps",
+      "icon": "",
+      "name": "Gel douche",
+      "slug": "gel-douche",
+      "tags": [
+        "douche"
+      ]
+    },
+    {
+      "aliases": [
+        "shampoing",
+        "shampooing",
+        "shamp"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Cheveux",
+      "icon": "",
+      "name": "Shampoing",
+      "slug": "shampoing",
+      "tags": [
+        "cheveux"
+      ]
+    },
+    {
+      "aliases": [
+        "après-shampoing",
+        "après shampoing",
+        "démêlant",
+        "masque cheveux"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Cheveux",
+      "icon": "",
+      "name": "Après-shampoing",
+      "slug": "apres-shampoing",
+      "tags": [
+        "cheveux"
+      ]
+    },
+    {
+      "aliases": [
+        "dentifrice",
+        "pâte dentifrice"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Bucco-dentaire",
+      "icon": "",
+      "name": "Dentifrice",
+      "slug": "dentifrice",
+      "tags": [
+        "dents"
+      ]
+    },
+    {
+      "aliases": [
+        "brosse à dents",
+        "brosse a dents",
+        "brosses dents"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Bucco-dentaire",
+      "icon": "",
+      "name": "Brosse à dents",
+      "slug": "brosse-a-dents",
+      "tags": [
+        "dents"
+      ]
+    },
+    {
+      "aliases": [
+        "fil dentaire",
+        "fil interdentaire"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Bucco-dentaire",
+      "icon": "",
+      "name": "Fil dentaire",
+      "slug": "fil-dentaire",
+      "tags": [
+        "dents"
+      ]
+    },
+    {
+      "aliases": [
+        "bain de bouche",
+        "rince-bouche"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Bucco-dentaire",
+      "icon": "",
+      "name": "Bain de bouche",
+      "slug": "bain-de-bouche",
+      "tags": [
+        "dents"
+      ]
+    },
+    {
+      "aliases": [
+        "déodorant",
+        "deodorant",
+        "déo",
+        "anti-transpirant"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Corps",
+      "icon": "",
+      "name": "Déodorant",
+      "slug": "deodorant",
+      "tags": []
+    },
+    {
+      "aliases": [
+        "crème hydratante",
+        "crème visage",
+        "crème corps",
+        "hydratant"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Soins",
+      "icon": "",
+      "name": "Crème hydratante",
+      "slug": "creme-hydratante",
+      "tags": [
+        "visage",
+        "corps"
+      ]
+    },
+    {
+      "aliases": [
+        "crème solaire",
+        "solaire",
+        "protection solaire",
+        "indice solaire"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Soins",
+      "icon": "",
+      "name": "Crème solaire",
+      "slug": "creme-solaire",
+      "tags": [
+        "soleil",
+        "été"
+      ]
+    },
+    {
+      "aliases": [
+        "coton démaquillant",
+        "disques coton",
+        "cotons démaquillants"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Soins",
+      "icon": "",
+      "name": "Coton démaquillant",
+      "slug": "coton-a-demaquiller",
+      "tags": [
+        "visage"
+      ]
+    },
+    {
+      "aliases": [
+        "cotons-tiges",
+        "coton tige",
+        "tiges coton"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Soins",
+      "icon": "",
+      "name": "Cotons-tiges",
+      "slug": "cotons-tiges",
+      "tags": [
+        "oreilles"
+      ]
+    },
+    {
+      "aliases": [
+        "désinfectant",
+        "antiseptique",
+        "solution hydroalcoolique",
+        "gel hydroalcoolique"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Pharmacie",
+      "icon": "",
+      "name": "Désinfectant",
+      "slug": "desinfectant",
+      "tags": [
+        "soins",
+        "plaie"
+      ]
+    },
+    {
+      "aliases": [
+        "couches bébé",
+        "couches",
+        "pampers"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Change",
+      "icon": "",
+      "name": "Couches bébé",
+      "slug": "couches-bebe",
+      "tags": [
+        "bébé",
+        "change"
+      ]
+    },
+    {
+      "aliases": [
+        "lait infantile",
+        "lait bébé",
+        "lait maternisé",
+        "poudre bébé"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Repas bébé",
+      "icon": "",
+      "name": "Lait infantile",
+      "slug": "lait-infantile",
+      "tags": [
+        "bébé",
+        "repas"
+      ]
+    },
+    {
+      "aliases": [
+        "crème change",
+        "crème fesses",
+        "pommade change"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Change",
+      "icon": "",
+      "name": "Crème de change",
+      "slug": "creme-change",
+      "tags": [
+        "bébé",
+        "change"
+      ]
+    },
+    {
+      "aliases": [
+        "biberon",
+        "biberons",
+        "tétine biberon"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Repas bébé",
+      "icon": "",
+      "name": "Biberon",
+      "slug": "biberon",
+      "tags": [
+        "bébé",
+        "repas"
+      ]
+    },
+    {
+      "aliases": [
+        "croquettes chat",
+        "croquette chat",
+        "nourriture chat"
+      ],
+      "aisle": "Animalerie",
+      "category": "Chats",
+      "icon": "",
+      "name": "Croquettes chat",
+      "slug": "croquettes-chat",
+      "tags": [
+        "chat",
+        "nourriture"
+      ]
+    },
+    {
+      "aliases": [
+        "litière chat",
+        "litiere",
+        "bac litière"
+      ],
+      "aisle": "Animalerie",
+      "category": "Chats",
+      "icon": "",
+      "name": "Litière chat",
+      "slug": "litiere-chat",
+      "tags": [
+        "chat",
+        "litière"
+      ]
+    },
+    {
+      "aliases": [
+        "croquettes chien",
+        "croquette chien",
+        "nourriture chien"
+      ],
+      "aisle": "Animalerie",
+      "category": "Chiens",
+      "icon": "",
+      "name": "Croquettes chien",
+      "slug": "croquettes-chien",
+      "tags": [
+        "chien",
+        "nourriture"
+      ]
+    },
+    {
+      "aliases": [
+        "friandises chien",
+        "biscuits chien",
+        "récompenses chien"
+      ],
+      "aisle": "Animalerie",
+      "category": "Chiens",
+      "icon": "",
+      "name": "Friandises chien",
+      "slug": "friandises-chien",
+      "tags": [
+        "chien"
+      ]
+    },
+    {
+      "aliases": [
+        "allumettes",
+        "boîte allumettes"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Consommables cuisine",
+      "icon": "",
+      "name": "Allumettes",
+      "slug": "allumettes",
+      "tags": [
+        "cuisine"
+      ]
+    },
+    {
+      "aliases": [
+        "lingettes bébé",
+        "lingettes",
+        "lingettes nettoyantes bébé"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Change",
+      "icon": "",
+      "name": "Lingettes bébé",
+      "slug": "lingettes-bebe",
+      "tags": [
+        "bébé",
+        "change"
+      ]
+    },
+    {
+      "aliases": [
+        "ampoule led",
+        "ampoules",
+        "ampoule basse consommation"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Ampoule LED",
+      "slug": "ampoule-led",
+      "tags": [
+        "éclairage"
+      ]
+    },
+    {
+      "aliases": [
+        "pansements",
+        "pansement",
+        "sparadrap"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Pharmacie",
+      "icon": "",
+      "name": "Pansements",
+      "slug": "pansements",
+      "tags": [
+        "soins",
+        "plaie"
+      ]
+    },
+    {
+      "aliases": [
+        "mousse à raser",
+        "mousse rasage",
+        "gel rasage"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Rasage",
+      "icon": "",
+      "name": "Mousse à raser",
+      "slug": "mousse-a-raser",
+      "tags": [
+        "rasage"
+      ]
+    },
+    {
+      "aliases": [
+        "piles aa",
+        "piles",
+        "piles lr6",
+        "batteries aa"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Piles AA",
+      "slug": "piles-aa",
+      "tags": []
+    },
+    {
+      "aliases": [
+        "rasoirs jetables",
+        "rasoir",
+        "lames rasoir"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Rasage",
+      "icon": "",
+      "name": "Rasoirs jetables",
+      "slug": "rasoirs-jetables",
+      "tags": [
+        "rasage"
+      ]
+    },
+    {
+      "aliases": [
+        "sacs congélation",
+        "sachets congélation",
+        "sacs freezer"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Consommables cuisine",
+      "icon": "",
+      "name": "Sacs congélation",
+      "slug": "sacs-congelation",
+      "tags": [
+        "cuisine",
+        "congélateur"
+      ]
+    },
+    {
+      "aliases": [
+        "sel lave-vaisselle",
+        "sel régénérant",
+        "sel adoucisseur"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Vaisselle",
+      "icon": "",
+      "name": "Sel lave-vaisselle",
+      "slug": "sel-lave-vaisselle",
+      "tags": [
+        "vaisselle"
+      ]
+    },
+    {
+      "aliases": [
+        "serviettes hygiéniques",
+        "protections hygiéniques",
+        "serviettes périodiques"
+      ],
+      "aisle": "Hygiène & beauté",
+      "category": "Hygiène intime",
+      "icon": "",
+      "name": "Serviettes hygiéniques",
+      "slug": "serviettes-hygieniques",
+      "tags": []
+    },
+    {
+      "aliases": [
+        "shampoing bébé",
+        "shampooing bébé",
+        "gel lavant bébé"
+      ],
+      "aisle": "Bébé & enfants",
+      "category": "Toilette bébé",
+      "icon": "",
+      "name": "Shampoing bébé",
+      "slug": "shampoing-bebe",
+      "tags": [
+        "bébé",
+        "toilette"
+      ]
+    },
+    {
+      "aliases": [
+        "eau de javel",
+        "javel",
+        "eau javel"
+      ],
+      "aisle": "Maison & entretien",
+      "category": "Entretien maison",
+      "icon": "",
+      "name": "Eau de Javel",
+      "slug": "eau-de-javel",
+      "tags": [
+        "ménage",
+        "désinfection"
+      ]
+    }
+  ],
+  "meta": {
+    "note": "Lane-C authored non-culinary vocabulary (household, hygiene, baby, pets). Culinary-adjacent consumables already covered by the CookiGram snapshot (papier-aluminium, papier-cuisson→papier-sulfurise) are intentionally NOT duplicated here.",
+    "schema": 1
+  }
+}

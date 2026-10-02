@@ -1,0 +1,130 @@
+# Sync the public CookiGram ingredient catalog into data/cookigram-catalog.json.
+#
+# - Nightly schedule + manual dispatch (optional pinned-ref override).
+# - Fetches ONLY public files at a pinned 40-hex commit SHA (never a branch).
+# - Validates schema, transforms, diffs, runs tests, then opens/updates a PR.
+# - NEVER auto-merges: a human reviews and merges the PR.
+# - Silent no-op (no commit, no PR, no push) when nothing material changed.
+name: Sync CookiGram catalog
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # nightly 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Pinned CookiGram commit SHA (40-hex). Empty = resolve main HEAD."
+        required: false
+        default: ""
+
+concurrency:
+  group: sync-cookigram-catalog
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the sync branch
+      pull-requests: write # open/update the sync PR
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out shopping-list
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Resolve pinned ref
+        id: ref
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.ref }}" ]; then
+            REF="${{ inputs.ref }}"
+          else
+            REF="$(git ls-remote https://github.com/CookiGram/cookigram.git HEAD | awk '{print $1}')"
+          fi
+          if ! printf '%s' "$REF" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "error: resolved ref is not a 40-hex SHA: $REF" >&2
+            exit 1
+          fi
+          echo "sha=$REF" >> "$GITHUB_OUTPUT"
+          echo "short=${REF:0:7}" >> "$GITHUB_OUTPUT"
+          echo "Resolved CookiGram ref: $REF"
+
+      - name: Check out CookiGram icon pack (sparse, pinned ref)
+        uses: actions/checkout@v4
+        with:
+          repository: CookiGram/cookigram
+          ref: ${{ steps.ref.outputs.sha }}
+          sparse-checkout: static/icons/ingredients
+          path: .cookigram-ref
+
+      - name: Sync catalog snapshot
+        run: |
+          python3 scripts/sync-catalog.py sync \
+            --ref '${{ steps.ref.outputs.sha }}' \
+            --icons-dir .cookigram-ref/static/icons/ingredients \
+            --out /tmp/catalog.new.json
+          rm -rf .cookigram-ref
+
+      - name: Material diff (ignore fetched_at)
+        id: diff
+        run: |
+          RESULT="$(python3 scripts/sync-catalog.py material-diff data/cookigram-catalog.json /tmp/catalog.new.json)"
+          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+          echo "Material diff: $RESULT"
+
+      - name: Run sync tests
+        if: steps.diff.outputs.result == 'changed'
+        run: python3 -m unittest discover -s tests/sync -v
+
+      - name: Open or update sync PR
+        if: steps.diff.outputs.result == 'changed'
+        run: |
+          set -euo pipefail
+          REF='${{ steps.ref.outputs.sha }}'
+          SHORT='${{ steps.ref.outputs.short }}'
+          BRANCH="ci/cookigram-catalog-$SHORT"
+          SUMMARY="$(python3 scripts/sync-catalog.py material-diff --summary data/cookigram-catalog.json /tmp/catalog.new.json)"
+          ENTRIES="$(python3 -c 'import json,sys; print(json.load(open("/tmp/catalog.new.json"))["meta"]["source"]["files"][".gram/ingredients.yaml"]["entries"])')"
+          mv /tmp/catalog.new.json data/cookigram-catalog.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BRANCH"
+          git add data/cookigram-catalog.json
+          if git diff --cached --quiet; then
+            echo "No staged change after material diff — nothing to do."
+            exit 0
+          fi
+          git commit -m "chore(catalog): sync CookiGram catalog @ $SHORT" -m "CookiGram ref: $REF" -m "Entries: $ENTRIES"
+          git push -u origin "$BRANCH"
+
+          ADDED="$(python3 -c 'import json,sys; print(", ".join(json.loads(sys.argv[1])["added"][:20]) or "(none)")' "$SUMMARY")"
+          REMOVED="$(python3 -c 'import json,sys; print(", ".join(json.loads(sys.argv[1])["removed"][:20]) or "(none)")' "$SUMMARY")"
+          N_CHANGED="$(python3 -c 'import json,sys; print(len(json.loads(sys.argv[1])["changed"]))' "$SUMMARY")"
+          CHANGED="$(python3 -c 'import json,sys; print(", ".join(json.loads(sys.argv[1])["changed"][:20]) or "(none)")' "$SUMMARY")"
+          cat > /tmp/pr-body.md <<EOF
+          Automated catalog sync from the public CookiGram repository.
+
+          - CookiGram ref: \`$REF\`
+          - Entries: $ENTRIES
+          - Added: $ADDED
+          - Removed: $REMOVED
+          - Changed ($N_CHANGED): $CHANGED
+
+          Only \`data/cookigram-catalog.json\` is touched. No auto-merge:
+          a human reviews and merges this PR.
+          EOF
+          if gh pr view "$BRANCH" --json url --jq .url >/dev/null 2>&1; then
+            gh pr edit "$BRANCH" --body-file /tmp/pr-body.md
+          else
+            gh pr create --title "chore(catalog): sync CookiGram catalog @ $SHORT" \
+              --body-file /tmp/pr-body.md --head "$BRANCH"
+          fi
+
+      - name: No material change
+        if: steps.diff.outputs.result == 'unchanged'
+        run: echo "Catalog unchanged (ignoring fetched_at) — silent no-op, no commit, no PR."

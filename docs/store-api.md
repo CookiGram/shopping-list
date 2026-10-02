@@ -1,0 +1,224 @@
+# Store API — favorites / staples / history / persistence (Lane G)
+
+Persistence and session layer for the Shopping List PWA. Vanilla ES
+modules, no dependencies, no backend. Concepts are decoupled from
+catalog internals: these modules never import `catalog.js` — catalog
+knowledge crosses the boundary only as plain `{slug, name}` data
+(plus an opaque `provenance.source` tag).
+
+## Files
+
+| Path | Owner | Content |
+| ---- | ----- | ------- |
+| `js/store.js` | Lane G | List, favorites, staple memory, prefs, frequency, event bus |
+| `js/staples.js` | Lane G | Ephemeral "Essentials to check" ritual (pure, no storage) |
+| `js/history.js` | Lane G | Close-the-session snapshots ("Récents") |
+
+## Storage keys
+
+All keys carry a `:v1` namespace (same habit as CookiGram's
+suffixed keys). Values are JSON.
+
+| Key | Shape |
+| --- | ----- |
+| `shopping-list:items:v1` | Array of items (insertion order) |
+| `shopping-list:favorites:v1` | Array of `{key, slug\|null, name, addedAt}` |
+| `shopping-list:staples:v1` | Map `{slug: {decision, at}}` (decisions only) |
+| `shopping-list:history:v1` | Array of sessions, oldest first (capped at 20) |
+| `shopping-list:prefs:v1` | Prefs object over `DEFAULT_PREFS` |
+| `shopping-list:frequency:v1` | Map `{normalizedName: {name, slug, count, lastUsedAt}}` (capped at 300 keys) |
+
+Corrupt JSON under any key resets that key to its default (fail-soft).
+When `localStorage` is unavailable or throws (private mode, quota),
+the store falls back to an in-memory adapter so the session keeps
+working. Tests may inject a backend via
+`configureStore({storage})` (mirrors the `fetchImpl` pattern of
+`catalog.js`).
+
+## Item shape
+
+```js
+{
+  id: "7f3c…",            // createId(): randomUUID, Math.random fallback
+  slug: "ail",            // catalog slug, or null for free-text items
+  name: "Ail",            // display name (required, trimmed)
+  qty: "3 gousses",       // quantity string, "" when unspecified
+  checked: false,
+  addedAt: 1727745600000,
+  provenance: {source: "cookigram"} // "cookigram" | "dict" | "custom"
+}
+```
+
+`provenance.source` records where the ingredient knowledge came from:
+`cookigram` (culinary snapshot), `dict` (household dictionary),
+`custom` (free text). Default when omitted: `slug ? cookigram :
+custom` — so the app lane MUST pass `{source: "dict"}` explicitly
+for household entries. Unknown sources throw. Re-adds (history,
+favorites, ritual) preserve the original provenance; the re-add
+path is never recorded as a source.
+
+## `js/store.js` API
+
+```js
+import {
+  getItems, getItem, addItem, toggleItem, setChecked, setQty,
+  removeItem, clearChecked, clearAll, subscribe,
+  getFrequency, topFrequent,
+  favoriteKey, getFavorites, isFavorite, toggleFavorite, clearFavorites,
+  noteStapleDecision, getStapleDecisions, clearStapleDecisions,
+  getPrefs, setPrefs, resetPrefs,
+} from "./store.js";
+```
+
+Current list:
+
+- `getItems()` → items in insertion order (copies).
+- `getItem(id)` → item or null.
+- `addItem({name, qty?, slug?, provenance?})` → item. Throws on
+  blank `name`. Merges on identical normalized name + qty (no
+  duplicate; a checked match is re-activated with `merged: true`
+  in the event detail). Records a frequency signal on every call.
+- `toggleItem(id)` / `setChecked(id, bool)` → updated item or null.
+- `setQty(id, qty)` → updated item or null.
+- `removeItem(id)` → bool.
+- `clearChecked()` → removed items (hand them to
+  `history.closeSession` when closing a shopping session).
+- `clearAll()` → number removed.
+
+Frequency signal (ranking help for the search/app lanes):
+
+- `getFrequency(name)` → `{name, slug, count, lastUsedAt}` or null.
+- `topFrequent(limit = 8, {exclude = []})` → records ordered by
+  count desc, recency desc; `exclude` holds slugs already on the
+  list. Lookup keys use `normalizeName` (same semantics as
+  catalog `normalizeKey`, duplicated so the store stays decoupled).
+
+Favorites (heart toggles):
+
+- `favoriteKey({slug?, name})` → slug, else `name:<normalized>`.
+- `getFavorites()` → favorites in add order (copies).
+- `isFavorite({slug?, name})` → bool.
+- `toggleFavorite({slug?, name})` → `{favorite, key}` (state
+  *after* the toggle). Throws when both are blank.
+- `clearFavorites()` → number removed.
+
+Staple-ritual memory (see `staples.js` below):
+
+- `noteStapleDecision(slug, "added"|"rejected"|"ignored")`.
+- `getStapleDecisions()` → `{slug: {decision, at}}` copy.
+- `clearStapleDecisions()` → number removed.
+
+Prefs:
+
+- `getPrefs()` → stored values over
+  `DEFAULT_PREFS = {essentialsEnabled: true, lastRitualAt: null}`
+  (unknown stored keys are preserved).
+- `setPrefs(patch)` → merged prefs. `resetPrefs()` → defaults.
+
+### Events
+
+`subscribe(listener)` listens on document CustomEvent
+`"shopping-list:change"` and returns an unsubscribe function
+(no-op outside the DOM). Detail is `{type, …}`:
+
+| `type` | Extra detail |
+| ------ | ------------ |
+| `items:add` | `{id, merged?}` |
+| `items:toggle` | `{id}` |
+| `items:qty` | `{id}` |
+| `items:remove` | `{id}` |
+| `items:clear-checked` | `{count}` |
+| `items:clear` | `{count}` |
+| `favorites:toggle` | `{key, favorite}` |
+| `favorites:clear` | `{count}` |
+| `staples:decision` | `{key, decision}` |
+| `staples:clear` | `{count}` |
+| `history:close` | `{id, count}` |
+| `history:clear` | `{count}` |
+| `prefs:change` | — |
+| `external` | `{key?}` (another tab wrote one of our keys) |
+
+Cross-tab reactivity follows the CookiGram pattern
+(`selection-app.js`): a single window `storage` listener,
+installed on first `subscribe`, re-emits matching keys as
+`external`.
+
+## `js/history.js` API
+
+```js
+import { closeSession, getHistory, getHistoryEntry,
+         clearHistory, recentItems } from "./history.js";
+```
+
+- `closeSession(items, {closedAt?})` → session entry or null.
+  `items` is the current-list shape (or any
+  `[{slug?, name, qty?}]`); blank names are dropped. Returns
+  null when nothing is worth recording. Sessions are capped
+  (`MAX_SESSIONS = 20`, oldest dropped; `MAX_ITEMS_PER_SESSION
+  = 200`). Typical call site: after `clearChecked()`, or an
+  explicit "finish shopping" action snapshotting `getItems()`.
+- `getHistory()` → sessions newest first (copies).
+- `getHistoryEntry(id)` → session or null.
+- `clearHistory()` → number removed.
+- `recentItems(limit = 20)` → deduped `[{slug, name}]`, newest
+  first, for the "Récents" quick re-add UI (re-add via
+  `store.addItem`, which refreshes the frequency signal).
+
+Session entry: `{id, closedAt, items: [{slug, name, qty}],
+count}`.
+
+## `js/staples.js` API (ephemeral ritual)
+
+The ritual is NEVER a second permanent list: state lives in
+memory only. The app lane resolves candidates (catalog
+`staple: true` flags → `{slug, name}`), runs the ritual, turns
+`validate()` results into `store.addItem` calls, and persists
+`decisions()` via `store.noteStapleDecision()` at the end.
+
+```js
+import { createRitual, filterCandidates } from "./staples.js";
+
+const ritual = createRitual(filterCandidates(staples, {
+  onListSlugs: getItems().map((i) => i.slug).filter(Boolean),
+  recentDecisions: getStapleDecisions(),
+}));
+ritual.pending();        // [{slug, name}] still undecided
+ritual.validate("farine"); // → candidate (caller: addItem it)
+ritual.reject("kirsch");   // → true
+ritual.ignoreRest();       // → remaining; ends the ritual
+ritual.decisions();        // [{slug, name, decision}] for noteStapleDecision
+ritual.isDone();           // true when nothing is pending
+```
+
+- `createRitual(candidates)` dedupes by slug and drops empties;
+  `validate`/`reject` on an unknown, already-decided, or
+  post-`ignoreRest` slug return null/false. Pure: no imports,
+  no storage, no DOM.
+- `filterCandidates(candidates, {onListSlugs?,
+  recentDecisions?, cooldownMs? = 7 days, now?})` drops slugs
+  already on the list and slugs rejected within the cooldown
+  (`added`/`ignored` past decisions do NOT suppress a
+  re-proposal).
+
+## Relationship to `cookigram-contract.md` §9.2
+
+The six proposed names (`getItems`, `addItem`, `toggleItem`,
+`setQty`, `clearChecked`, `subscribe`), the item core fields,
+the `"shopping-list:items:v1"` key, the
+`"shopping-list:change"` event with `{type, id?}` detail, and
+the cross-tab `storage` listener are kept verbatim — no
+contract update needed. Deliberate additive deviations:
+
+1. Items gain a `provenance` field (`{source}` incl.
+   `cookigram`; see above) — required by the Lane G brief.
+2. `addItem` re-activates a checked merge match (still no
+   duplicate; reported via `merged: true`) instead of leaving
+   it checked.
+3. Favorites detail uses `{key}` rather than `{id}` (favorites
+   are keyed by slug/name, not by item id).
+4. sibling Lane-G concepts required by the brief (favorites,
+   staple memory, history, prefs, frequency) are new exported
+   functions, not renames.
+5. Fail-soft storage (corrupt-JSON reset, in-memory fallback)
+   and `configureStore` are robustness additions with no
+   contract counterpart.
