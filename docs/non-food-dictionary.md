@@ -18,7 +18,7 @@ Shopping List est une PWA autonome dédiée à la gestion de listes de courses q
 Ce dictionnaire sert de socle pour :
 - alimenter l'**autocomplétion** et la recherche instantanée offline ;
 - structurer le classement par **catégories canoniques** ;
-- supporter des **aliases** naturels (ex. recherche de « sopalin » pour trouver « Essuie-tout ») ;
+- supporter des **aliases** naturels (ex. recherche de « papier absorbant » pour trouver « Essuie-tout ») ;
 - associer des **clés d'icônes sémantiques** ;
 - suggérer des **unités simples** et des tags pertinents ;
 - amorcer les suggestions de **favoris** et de **staples** (produits récurrents).
@@ -146,17 +146,24 @@ L'ajout d'une nouvelle catégorie doit rester exceptionnel afin d'éviter la sur
 
 ---
 
-## 6. Comment gérer une icon key manquante
+## 6. Contrat des icônes et gestion des clés non encore couvertes
 
-Les entrées du dictionnaire portent une clé sémantique (ex. `laundry-detergent`, `toilet-paper`, `cat-litter`).
+Les entrées du dictionnaire stockent des **clés sémantiques stables sans extension** (ex. `laundry-detergent`, `toilet-paper`, `cat-litter`), et non des chemins de fichiers.
 
-### Règle d'affichage et fallback
-- L'application cherche l'asset visuel dans `assets/icons/<icon>.svg`.
-- **Si l'icône SVG existe :** elle est affichée via `<img src="assets/icons/<icon>.svg" alt="..." />`.
-- **Si l'icône SVG n'existe pas encore :** l'interface utilise un fallback gracieux (ex. puce neutre, première lettre ou icône de repli de la catégorie parente). Aucune erreur bloquante n'est déclenchée.
+### Distinction contrat de données vs contrat runtime
 
-### Pipeline de production d'icônes
-Lorsqu'un lot d'icônes vectorielles est produit pour Shopping List :
+1. **Contrat de données (dictionnaire) :**
+   - Le champ `icon` contient une clé sémantique abstraite en kebab-case anglais (ex. `"icon": "laundry-detergent"`).
+   - Ce dictionnaire ne lie pas ses entrées au format de stockage (`.svg`, sprite, police d'icônes).
+2. **Contrat d'intégration runtime futur :**
+   - Le runtime actuel de Shopping List (`js/list.js`) résout les icônes en concaténant directement `./assets/icons/` avec la valeur du champ `icon` (qui contient déjà `.svg` dans le snapshot culinaire CookiGram).
+   - Lors de la future intégration du dictionnaire non culinaire dans le runtime (`js/catalog.js`), l'adaptateur de catalogue devra assurer la résolution de cette clé vers le fichier d'asset concret (typiquement `./assets/icons/${item.icon}.svg`).
+3. **Comportement de repli gracieux (fallback) :**
+   - À l'heure actuelle, les 97 clés d'icônes uniques de ce dictionnaire n'ont **aucun asset SVG correspondant** dans `assets/icons/` (les 174 fichiers SVG présents correspondent exclusivement aux ingrédients culinaires vendorisés).
+   - Tant qu'un asset SVG n'est pas fourni, le runtime utilise son mécanisme de fallback gracieux (pastille d'initiale / puce neutre). Aucune exception ou blocage n'est levé.
+
+### Pipeline de production d'icônes (lane ultérieure)
+Lorsqu'un lot d'icônes vectorielles non alimentaires sera produit :
 1. Respecter le gabarit visuel CookiGram : `viewBox="0 0 32 32"`, tracés nets, contour sombre `#382a25`, aplats de couleurs chaleureuses.
-2. Déposer le fichier SVG sous `assets/icons/<icon>.svg`.
-3. Ajouter le chemin au precache du Service Worker dans `sw.js` pour la disponibilité hors ligne.
+2. Déposer les fichiers sous `assets/icons/<icon>.svg`.
+3. Déclarer les fichiers dans le precache `sw.js` pour la disponibilité offline.

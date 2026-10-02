@@ -69,8 +69,7 @@
       "label": "Biberon",
       "aliases": [
         "biberons gradués",
-        "biberon nourrisson",
-        "tétines de biberon"
+        "biberon nourrisson"
       ],
       "category": "baby",
       "icon": "baby-bottle",
@@ -101,8 +100,8 @@
       "label": "Lait de toilette pour bébé",
       "aliases": [
         "lait nettoyant bébé",
-        "eau nettoyante pour bébé",
-        "lotion douceur bébé"
+        "lotion douceur bébé",
+        "lotion de toilette bébé"
       ],
       "category": "baby",
       "icon": "baby-lotion",
@@ -576,8 +575,7 @@
       "label": "Bande extensible",
       "aliases": [
         "bande de crêpe",
-        "bande élastique de maintien",
-        "bande velpeau"
+        "bande élastique de maintien"
       ],
       "category": "health",
       "icon": "elastic-bandage",
@@ -753,7 +751,7 @@
       "aliases": [
         "cintres vêtements",
         "cintres penderie",
-        "porte-manteaux"
+        "cintres pour vêtements"
       ],
       "category": "household",
       "icon": "clothes-hanger",
@@ -989,8 +987,7 @@
       "label": "Fil dentaire",
       "aliases": [
         "soie dentaire",
-        "fil interdentaire",
-        "brossettes interdentaires"
+        "fil interdentaire"
       ],
       "category": "hygiene",
       "icon": "dental-floss",
@@ -1021,7 +1018,6 @@
       "label": "Rasoirs jetables",
       "aliases": [
         "rasoirs",
-        "lames de rasoir",
         "rasoir mécanique"
       ],
       "category": "hygiene",
@@ -1084,7 +1080,7 @@
       "aliases": [
         "savon mains",
         "flacon pompe savon",
-        "pousse-mousse mains"
+        "savon liquide pour les mains"
       ],
       "category": "hygiene",
       "icon": "liquid-hand-soap",
@@ -1100,7 +1096,7 @@
       "aliases": [
         "crème pour le visage",
         "crème de jour",
-        "lait corporel"
+        "soin hydratant visage"
       ],
       "category": "hygiene",
       "icon": "moisturizing-cream",
@@ -1130,8 +1126,7 @@
       "label": "Coupe-ongles",
       "aliases": [
         "coupe ongles",
-        "ciseaux à ongles",
-        "lime à ongles"
+        "pince à ongles"
       ],
       "category": "hygiene",
       "icon": "nail-clippers",
@@ -1146,7 +1141,6 @@
       "label": "Serviettes hygiéniques",
       "aliases": [
         "protections périodiques",
-        "protège-slips",
         "serviettes intimes"
       ],
       "category": "hygiene",
@@ -1255,8 +1249,8 @@
       "label": "Brosse à dents",
       "aliases": [
         "brosses à dents",
-        "tête brosse à dents",
-        "brosse à dents souple"
+        "brosse à dents souple",
+        "brosse à dents manuelle"
       ],
       "category": "hygiene",
       "icon": "toothbrush",
@@ -1365,7 +1359,6 @@
       "id": "paper.paper-towels",
       "label": "Essuie-tout",
       "aliases": [
-        "sopalin",
         "papier absorbant",
         "rouleaux essuie-tout"
       ],

@@ -32,7 +32,8 @@ const KNOWN_BRANDS = [
   "tampax", "always", "nania", "brita", "tupperware",
   "duracell", "energizer", "varta", "panasonic", "philips", "osram",
   "whiskas", "felix", "sheba", "purina", "friskies", "royal canin", "pedigree", "frolic", "cesar",
-  "doliprane", "dafalgan", "efferalgan", "advil", "nurofen", "aspegic", "smecta", "imodium"
+  "doliprane", "dafalgan", "efferalgan", "advil", "nurofen", "aspegic", "smecta", "imodium",
+  "sopalin", "velpeau", "kleenex", "scottex", "scotch", "pousse-mousse", "pousse mousse", "band-aid", "q-tips"
 ];
 
 test("non-food dictionary: JSON is parseable and valid schema version/locale", async () => {
@@ -275,3 +276,49 @@ test("non-food dictionary: user-facing labels, categories and tags are in French
     }
   }
 });
+
+test("non-food dictionary: no alias collision across distinct items", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const seenAliases = new Map();
+  for (const item of data.items) {
+    for (const alias of item.aliases) {
+      const normalized = alias.toLowerCase().trim();
+      assert.ok(
+        !seenAliases.has(normalized),
+        `Alias collision for "${alias}" between ${seenAliases.get(normalized)} and ${item.id}`,
+      );
+      seenAliases.set(normalized, item.id);
+    }
+  }
+});
+
+test("non-food dictionary: forbidden distinct-intention aliases do not re-appear", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const FORBIDDEN_DISTINCT_INTENTION_ALIASES = [
+    { alias: "tétines de biberon", reason: "teats are distinct from feeding bottle" },
+    { alias: "brossettes interdentaires", reason: "interdental brushes are distinct from dental floss" },
+    { alias: "lames de rasoir", reason: "razor blades are distinct from disposable razors" },
+    { alias: "ciseaux à ongles", reason: "scissors are distinct from nail clippers" },
+    { alias: "lime à ongles", reason: "nail file is distinct from nail clippers" },
+    { alias: "protège-slips", reason: "panty liners are distinct from sanitary pads" },
+    { alias: "porte-manteaux", reason: "coat rack is distinct from clothes hangers" },
+    { alias: "tête brosse à dents", reason: "electric replacement head is distinct from toothbrush" },
+    { alias: "lait corporel", reason: "body lotion is distinct from face moisturizing cream" },
+    { alias: "eau nettoyante pour bébé", reason: "cleansing water is distinct from baby lotion/milk" }
+  ];
+
+  const allAliases = new Map();
+  for (const item of data.items) {
+    for (const a of item.aliases) {
+      allAliases.set(a.toLowerCase().trim(), item.id);
+    }
+  }
+
+  for (const check of FORBIDDEN_DISTINCT_INTENTION_ALIASES) {
+    assert.ok(
+      !allAliases.has(check.alias.toLowerCase().trim()),
+      `Forbidden alias "${check.alias}" found in ${allAliases.get(check.alias.toLowerCase().trim())} (${check.reason})`,
+    );
+  }
+});
+
