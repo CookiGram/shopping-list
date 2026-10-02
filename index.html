@@ -38,25 +38,6 @@
           role="listbox" aria-label="Suggestions d'ingrédients" hidden></ul>
       </section>
 
-      <!-- Lane mount: pantry-staple quick-add chips (essentials lane owns content) -->
-      <section class="essentials" id="essentials" aria-labelledby="essentials-title">
-        <h2 class="section-title" id="essentials-title">Essentiels</h2>
-        <ul class="chip-row" id="essentials-chips"></ul>
-      </section>
-
-      <!-- Lane mount: the shopping list, grouped by aisle (store/app lanes own rows) -->
-      <section aria-labelledby="list-title">
-        <div class="list-head">
-          <h2 class="section-title" id="list-title">Ma liste</h2>
-        </div>
-        <div class="shopping-list" id="list" data-shopping-list aria-live="polite">
-          <div class="empty-state" data-empty-state>
-            <p><strong>Votre liste est vide.</strong></p>
-            <p>Recherchez un ingrédient ci-dessus ou touchez un essentiel pour commencer.</p>
-          </div>
-        </div>
-      </section>
-
       <!-- Secondary actions: copy / share / export + clear (export lane owns behavior) -->
       <div class="actions-bar" role="group" aria-label="Actions de la liste">
         <button type="button" class="icon-btn icon-btn--danger" data-clear-checked
@@ -94,6 +75,25 @@
           </svg>
         </button>
       </div>
+
+      <!-- Lane mount: pantry-staple quick-add chips (essentials lane owns content) -->
+      <section class="essentials" id="essentials" aria-labelledby="essentials-title">
+        <h2 class="section-title" id="essentials-title">Essentiels</h2>
+        <ul class="chip-row" id="essentials-chips"></ul>
+      </section>
+
+      <!-- Lane mount: the shopping list, grouped by aisle (store/app lanes own rows) -->
+      <section aria-labelledby="list-title">
+        <div class="list-head">
+          <h2 class="section-title" id="list-title">Ma liste</h2>
+        </div>
+        <div class="shopping-list" id="list" data-shopping-list aria-live="polite">
+          <div class="empty-state" data-empty-state>
+            <p><strong>Votre liste est vide.</strong></p>
+            <p>Recherchez un ingrédient ci-dessus ou touchez un essentiel pour commencer.</p>
+          </div>
+        </div>
+      </section>
 
       <!-- Lane mount: recently removed / history (history lane owns content) -->
       <section id="history" aria-labelledby="history-title" hidden>
