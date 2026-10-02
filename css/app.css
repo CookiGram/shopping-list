@@ -135,6 +135,107 @@ main {
   color:var(--ink);
 }
 
+.voice-trigger {
+  flex:none;
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--ink);
+  font-size:1.1rem;
+  cursor:pointer;
+}
+
+.voice-trigger:hover { background:var(--cream); }
+
+.voice-trigger.is-listening {
+  background:var(--banner-bg);
+  box-shadow:0 0 0 3px #e96f3a33;
+}
+
+.voice-review {
+  margin-top:var(--space-2);
+  padding:var(--space-3);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:var(--card);
+  box-shadow:var(--shadow);
+}
+
+.voice-review-head {
+  display:flex;
+  align-items:center;
+  gap:var(--space-2);
+}
+
+.voice-review-head strong { margin-right:auto; }
+
+.voice-cancel {
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  text-decoration:underline;
+  cursor:pointer;
+}
+
+.voice-transcript {
+  margin:var(--space-1) 0 var(--space-2);
+  color:var(--muted);
+  font-size:.82rem;
+}
+
+.voice-chips {
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--space-2);
+  margin-bottom:var(--space-3);
+}
+
+.voice-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-1);
+  min-height:40px;
+  padding:var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  border:1px solid var(--line);
+  border-radius:var(--radius-full);
+  background:var(--cream);
+  color:var(--ink);
+  font:inherit;
+}
+
+.voice-chip-remove {
+  display:inline-grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  padding:0;
+  border:0;
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  cursor:pointer;
+}
+
+.voice-chip-remove:hover { background:var(--card); color:var(--ink); }
+
+.voice-confirm {
+  width:100%;
+  min-height:44px;
+  border:0;
+  border-radius:var(--radius-full);
+  background:var(--orange);
+  color:#fff;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.voice-confirm:disabled { opacity:.4; cursor:default; }
+
 .search-suggestions {
   position:absolute;
   z-index:20;
@@ -705,6 +806,10 @@ main {
 }
 
 .search-clear:focus-visible,
+.voice-trigger:focus-visible,
+.voice-cancel:focus-visible,
+.voice-chip-remove:focus-visible,
+.voice-confirm:focus-visible,
 .icon-btn:focus-visible,
 .shopping-action:focus-visible,
 .chip:focus-visible {
