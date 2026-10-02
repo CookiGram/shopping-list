@@ -1,0 +1,1620 @@
+{
+  "version": 1,
+  "locale": "fr-FR",
+  "categories": [
+    {
+      "id": "cleaning",
+      "label": "Entretien"
+    },
+    {
+      "id": "hygiene",
+      "label": "Hygiène"
+    },
+    {
+      "id": "paper",
+      "label": "Papier & consommables"
+    },
+    {
+      "id": "household",
+      "label": "Maison"
+    },
+    {
+      "id": "pets",
+      "label": "Animaux"
+    },
+    {
+      "id": "health",
+      "label": "Santé courante"
+    },
+    {
+      "id": "baby",
+      "label": "Bébé"
+    }
+  ],
+  "items": [
+    {
+      "id": "baby.baby-cotton-squares",
+      "label": "Maxi carrés de coton pour bébé",
+      "aliases": [
+        "coton bébé",
+        "carrés de coton bébé",
+        "cotons pour le change"
+      ],
+      "category": "baby",
+      "icon": "baby-cotton-squares",
+      "default_unit": "pack",
+      "tags": [
+        "toilette",
+        "change"
+      ]
+    },
+    {
+      "id": "baby.baby-diaper-sacks",
+      "label": "Sacs pour couches usagées",
+      "aliases": [
+        "sacs à couches",
+        "sachets pour couches sales",
+        "sacs poubelle pour couches"
+      ],
+      "category": "baby",
+      "icon": "baby-diaper-sacks",
+      "default_unit": "pack",
+      "tags": [
+        "change",
+        "déchets"
+      ]
+    },
+    {
+      "id": "baby.baby-feeding-bottle",
+      "label": "Biberon",
+      "aliases": [
+        "biberons gradués",
+        "biberon nourrisson",
+        "tétines de biberon"
+      ],
+      "category": "baby",
+      "icon": "baby-bottle",
+      "default_unit": "unit",
+      "tags": [
+        "repas",
+        "nourrisson"
+      ]
+    },
+    {
+      "id": "baby.baby-liniment",
+      "label": "Liniment oléo-calcaire",
+      "aliases": [
+        "liniment",
+        "liniment pour bébé",
+        "liniment de change"
+      ],
+      "category": "baby",
+      "icon": "baby-liniment",
+      "default_unit": "bottle",
+      "tags": [
+        "change",
+        "soin"
+      ]
+    },
+    {
+      "id": "baby.baby-lotion",
+      "label": "Lait de toilette pour bébé",
+      "aliases": [
+        "lait nettoyant bébé",
+        "eau nettoyante pour bébé",
+        "lotion douceur bébé"
+      ],
+      "category": "baby",
+      "icon": "baby-lotion",
+      "default_unit": "bottle",
+      "tags": [
+        "toilette",
+        "soin"
+      ]
+    },
+    {
+      "id": "baby.baby-pacifier",
+      "label": "Sucette pour bébé",
+      "aliases": [
+        "tétine bébé",
+        "sucette silicone bébé",
+        "tutute bébé"
+      ],
+      "category": "baby",
+      "icon": "baby-pacifier",
+      "default_unit": "unit",
+      "tags": [
+        "puériculture",
+        "nourrisson"
+      ]
+    },
+    {
+      "id": "baby.baby-wash",
+      "label": "Gel lavant pour bébé",
+      "aliases": [
+        "gel lavant corps et cheveux bébé",
+        "savon doux bébé",
+        "crème lavante pour nourrisson"
+      ],
+      "category": "baby",
+      "icon": "baby-wash",
+      "default_unit": "bottle",
+      "tags": [
+        "bain",
+        "toilette"
+      ]
+    },
+    {
+      "id": "baby.baby-wipes",
+      "label": "Lingettes pour bébé",
+      "aliases": [
+        "lingettes bébé",
+        "lingettes à l'eau bébé",
+        "lingettes nettoyantes change"
+      ],
+      "category": "baby",
+      "icon": "baby-wipes",
+      "default_unit": "pack",
+      "tags": [
+        "change",
+        "toilette"
+      ]
+    },
+    {
+      "id": "baby.diaper-rash-cream",
+      "label": "Crème pour le change",
+      "aliases": [
+        "crème pour les fesses de bébé",
+        "pâte à l'eau change",
+        "crème protectrice pour le change"
+      ],
+      "category": "baby",
+      "icon": "diaper-rash-cream",
+      "default_unit": "unit",
+      "tags": [
+        "change",
+        "soin"
+      ]
+    },
+    {
+      "id": "baby.diapers",
+      "label": "Couches pour bébé",
+      "aliases": [
+        "couches bébé",
+        "paquets de couches",
+        "changes pour bébé"
+      ],
+      "category": "baby",
+      "icon": "diapers",
+      "default_unit": "pack",
+      "tags": [
+        "change",
+        "nourrisson"
+      ]
+    },
+    {
+      "id": "baby.nursing-pads",
+      "label": "Coussinets d'allaitement",
+      "aliases": [
+        "coussinets allaitement absorbants",
+        "coussinets jetables allaitement",
+        "compresses d'allaitement"
+      ],
+      "category": "baby",
+      "icon": "nursing-pads",
+      "default_unit": "box",
+      "tags": [
+        "maternité",
+        "allaitement"
+      ]
+    },
+    {
+      "id": "cleaning.bleach",
+      "label": "Eau de Javel",
+      "aliases": [
+        "javel",
+        "pastilles javel",
+        "spray javel"
+      ],
+      "category": "cleaning",
+      "icon": "bleach",
+      "default_unit": "bottle",
+      "tags": [
+        "désinfectant",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.cleaning-wipes",
+      "label": "Lingettes désinfectantes",
+      "aliases": [
+        "lingettes ménagères",
+        "lingettes multi-usages",
+        "lingettes nettoyantes"
+      ],
+      "category": "cleaning",
+      "icon": "cleaning-wipes",
+      "default_unit": "pack",
+      "tags": [
+        "surfaces",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.descaler",
+      "label": "Détartrant",
+      "aliases": [
+        "anti-calcaire",
+        "détartrant cafetière",
+        "détartrant ménager"
+      ],
+      "category": "cleaning",
+      "icon": "descaler",
+      "default_unit": "bottle",
+      "tags": [
+        "calcaire",
+        "entretien"
+      ]
+    },
+    {
+      "id": "cleaning.dishwasher-salt",
+      "label": "Sel régénérant lave-vaisselle",
+      "aliases": [
+        "sel lave-vaisselle",
+        "sel régénérant"
+      ],
+      "category": "cleaning",
+      "icon": "dishwasher-salt",
+      "default_unit": "box",
+      "tags": [
+        "vaisselle"
+      ]
+    },
+    {
+      "id": "cleaning.dishwasher-tablets",
+      "label": "Pastilles lave-vaisselle",
+      "aliases": [
+        "tablettes lave-vaisselle",
+        "capsules lave-vaisselle",
+        "pastilles vaisselle"
+      ],
+      "category": "cleaning",
+      "icon": "dishwasher-tablets",
+      "default_unit": "box",
+      "tags": [
+        "vaisselle"
+      ]
+    },
+    {
+      "id": "cleaning.dishwashing-liquid",
+      "label": "Liquide vaisselle",
+      "aliases": [
+        "produit vaisselle",
+        "détergent vaisselle",
+        "liquide vaisselle mains"
+      ],
+      "category": "cleaning",
+      "icon": "dishwashing-liquid",
+      "default_unit": "bottle",
+      "tags": [
+        "vaisselle",
+        "cuisine"
+      ]
+    },
+    {
+      "id": "cleaning.drain-cleaner",
+      "label": "Déboucheur canalisations",
+      "aliases": [
+        "déboucheur",
+        "déboucheur évier",
+        "gel déboucheur"
+      ],
+      "category": "cleaning",
+      "icon": "drain-cleaner",
+      "default_unit": "bottle",
+      "tags": [
+        "plomberie",
+        "entretien"
+      ]
+    },
+    {
+      "id": "cleaning.fabric-softener",
+      "label": "Adoucissant",
+      "aliases": [
+        "assouplissant",
+        "adoucissant linge",
+        "assouplissant textile"
+      ],
+      "category": "cleaning",
+      "icon": "fabric-softener",
+      "default_unit": "bottle",
+      "tags": [
+        "linge",
+        "entretien"
+      ]
+    },
+    {
+      "id": "cleaning.floor-cleaner",
+      "label": "Nettoyant sol",
+      "aliases": [
+        "produit sol",
+        "détergent sol",
+        "lavant sol"
+      ],
+      "category": "cleaning",
+      "icon": "floor-cleaner",
+      "default_unit": "bottle",
+      "tags": [
+        "sol",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.laundry-detergent",
+      "label": "Lessive",
+      "aliases": [
+        "lessive liquide",
+        "lessive en poudre",
+        "capsules de lessive",
+        "détergent linge"
+      ],
+      "category": "cleaning",
+      "icon": "laundry-detergent",
+      "default_unit": "bottle",
+      "tags": [
+        "linge",
+        "entretien"
+      ]
+    },
+    {
+      "id": "cleaning.microfiber-cloths",
+      "label": "Lavettes microfibres",
+      "aliases": [
+        "chiffons microfibre",
+        "lavette",
+        "torchons microfibre"
+      ],
+      "category": "cleaning",
+      "icon": "microfiber-cloth",
+      "default_unit": "pack",
+      "tags": [
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.multi-surface-cleaner",
+      "label": "Nettoyant multi-usages",
+      "aliases": [
+        "spray multi-usages",
+        "nettoyant ménager",
+        "produit nettoyant universel"
+      ],
+      "category": "cleaning",
+      "icon": "multi-surface-cleaner",
+      "default_unit": "bottle",
+      "tags": [
+        "surfaces",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.rinse-aid",
+      "label": "Liquide de rinçage",
+      "aliases": [
+        "produit de rinçage lave-vaisselle",
+        "rinçage vaisselle"
+      ],
+      "category": "cleaning",
+      "icon": "rinse-aid",
+      "default_unit": "bottle",
+      "tags": [
+        "vaisselle"
+      ]
+    },
+    {
+      "id": "cleaning.rubber-gloves",
+      "label": "Gants de ménage",
+      "aliases": [
+        "gants ménagers",
+        "gants vaisselle",
+        "gants latex ménage"
+      ],
+      "category": "cleaning",
+      "icon": "rubber-gloves",
+      "default_unit": "pack",
+      "tags": [
+        "protection",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.sponges",
+      "label": "Éponges",
+      "aliases": [
+        "éponge",
+        "éponges grattantes",
+        "tampons à récurer"
+      ],
+      "category": "cleaning",
+      "icon": "sponge",
+      "default_unit": "pack",
+      "tags": [
+        "vaisselle",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.stain-remover",
+      "label": "Détachant",
+      "aliases": [
+        "détachant textile",
+        "anti-taches linge",
+        "spray détachant"
+      ],
+      "category": "cleaning",
+      "icon": "stain-remover",
+      "default_unit": "bottle",
+      "tags": [
+        "linge",
+        "entretien"
+      ]
+    },
+    {
+      "id": "cleaning.toilet-cleaner",
+      "label": "Gel WC",
+      "aliases": [
+        "produit wc",
+        "nettoyant wc",
+        "gel détartrant wc"
+      ],
+      "category": "cleaning",
+      "icon": "toilet-cleaner",
+      "default_unit": "bottle",
+      "tags": [
+        "sanitaires",
+        "wc"
+      ]
+    },
+    {
+      "id": "cleaning.toilet-rim-block",
+      "label": "Bloc WC",
+      "aliases": [
+        "bloc cuvette wc",
+        "pastille wc",
+        "désodorisant wc"
+      ],
+      "category": "cleaning",
+      "icon": "toilet-rim-block",
+      "default_unit": "pack",
+      "tags": [
+        "sanitaires",
+        "wc"
+      ]
+    },
+    {
+      "id": "cleaning.vacuum-bags",
+      "label": "Sacs aspirateur",
+      "aliases": [
+        "sac aspirateur",
+        "sacs pour aspirateur",
+        "recharge aspirateur"
+      ],
+      "category": "cleaning",
+      "icon": "vacuum-bag",
+      "default_unit": "pack",
+      "tags": [
+        "aspirateur",
+        "ménage"
+      ]
+    },
+    {
+      "id": "cleaning.window-cleaner",
+      "label": "Nettoyant vitres",
+      "aliases": [
+        "produit vitres",
+        "spray vitres",
+        "lave-vitres"
+      ],
+      "category": "cleaning",
+      "icon": "window-cleaner",
+      "default_unit": "bottle",
+      "tags": [
+        "vitres",
+        "ménage"
+      ]
+    },
+    {
+      "id": "health.adhesive-bandages",
+      "label": "Pansements adhésifs",
+      "aliases": [
+        "pansements",
+        "pansements prédécoupés",
+        "sparadrap pansement"
+      ],
+      "category": "health",
+      "icon": "bandages",
+      "default_unit": "box",
+      "tags": [
+        "premiers-secours",
+        "soins"
+      ]
+    },
+    {
+      "id": "health.antiseptic-spray",
+      "label": "Spray antiseptique",
+      "aliases": [
+        "désinfectant pour plaies",
+        "antiseptique cutané",
+        "spray désinfectant local"
+      ],
+      "category": "health",
+      "icon": "antiseptic",
+      "default_unit": "bottle",
+      "tags": [
+        "premiers-secours",
+        "désinfection"
+      ]
+    },
+    {
+      "id": "health.arnica-gel",
+      "label": "Gel à l'arnica",
+      "aliases": [
+        "crème à l'arnica",
+        "pommade arnica",
+        "gel apaisant coups"
+      ],
+      "category": "health",
+      "icon": "arnica-gel",
+      "default_unit": "unit",
+      "tags": [
+        "coups",
+        "hématomes"
+      ]
+    },
+    {
+      "id": "health.elastic-bandage",
+      "label": "Bande extensible",
+      "aliases": [
+        "bande de crêpe",
+        "bande élastique de maintien",
+        "bande velpeau"
+      ],
+      "category": "health",
+      "icon": "elastic-bandage",
+      "default_unit": "roll",
+      "tags": [
+        "premiers-secours",
+        "maintien"
+      ]
+    },
+    {
+      "id": "health.hand-sanitizer",
+      "label": "Gel hydroalcoolique",
+      "aliases": [
+        "désinfectant pour les mains",
+        "gel antibactérien",
+        "solution hydroalcoolique"
+      ],
+      "category": "health",
+      "icon": "hand-sanitizer",
+      "default_unit": "bottle",
+      "tags": [
+        "hygiène",
+        "désinfection"
+      ]
+    },
+    {
+      "id": "health.medical-tape",
+      "label": "Sparadrap médical",
+      "aliases": [
+        "sparadrap de fixation",
+        "ruban adhésif pour pansement",
+        "sparadrap microporeux"
+      ],
+      "category": "health",
+      "icon": "medical-tape",
+      "default_unit": "roll",
+      "tags": [
+        "premiers-secours",
+        "pansements"
+      ]
+    },
+    {
+      "id": "health.mosquito-repellent",
+      "label": "Spray anti-moustiques",
+      "aliases": [
+        "répulsif anti-moustiques",
+        "lotion moustiques",
+        "spray répulsif insectes"
+      ],
+      "category": "health",
+      "icon": "mosquito-repellent",
+      "default_unit": "bottle",
+      "tags": [
+        "protection",
+        "été"
+      ]
+    },
+    {
+      "id": "health.saline-solution",
+      "label": "Sérum physiologique",
+      "aliases": [
+        "sérum phy",
+        "unidoses sérum physiologique",
+        "dosettes de sérum physiologique"
+      ],
+      "category": "health",
+      "icon": "saline-solution",
+      "default_unit": "box",
+      "tags": [
+        "soins",
+        "yeux-nez"
+      ]
+    },
+    {
+      "id": "health.sterile-gauze-pads",
+      "label": "Compresses stériles",
+      "aliases": [
+        "compresses de gaze",
+        "gazes stériles pour plaies",
+        "compresses non tissées"
+      ],
+      "category": "health",
+      "icon": "gauze-pads",
+      "default_unit": "box",
+      "tags": [
+        "premiers-secours",
+        "plaies"
+      ]
+    },
+    {
+      "id": "health.thermometer",
+      "label": "Thermomètre médical",
+      "aliases": [
+        "thermomètre digital",
+        "thermomètre corporel",
+        "thermomètre électronique"
+      ],
+      "category": "health",
+      "icon": "thermometer",
+      "default_unit": "unit",
+      "tags": [
+        "mesure",
+        "diagnostic"
+      ]
+    },
+    {
+      "id": "household.aa-batteries",
+      "label": "Piles AA",
+      "aliases": [
+        "piles lr6",
+        "piles bâtons aa",
+        "piles normales"
+      ],
+      "category": "household",
+      "icon": "batteries",
+      "default_unit": "pack",
+      "tags": [
+        "énergie",
+        "électricité"
+      ]
+    },
+    {
+      "id": "household.aaa-batteries",
+      "label": "Piles AAA",
+      "aliases": [
+        "piles lr03",
+        "petites piles aaa",
+        "piles télécommande"
+      ],
+      "category": "household",
+      "icon": "batteries",
+      "default_unit": "pack",
+      "tags": [
+        "énergie",
+        "électricité"
+      ]
+    },
+    {
+      "id": "household.adhesive-tape",
+      "label": "Ruban adhésif",
+      "aliases": [
+        "rouleau adhésif",
+        "ruban adhésif transparent",
+        "adhésif d'emballage"
+      ],
+      "category": "household",
+      "icon": "adhesive-tape",
+      "default_unit": "roll",
+      "tags": [
+        "bricolage",
+        "bureau"
+      ]
+    },
+    {
+      "id": "household.candles",
+      "label": "Bougies",
+      "aliases": [
+        "bougies chauffe-plat",
+        "bougie décorative",
+        "chandelles blanches"
+      ],
+      "category": "household",
+      "icon": "candle",
+      "default_unit": "pack",
+      "tags": [
+        "décoration",
+        "ambiance"
+      ]
+    },
+    {
+      "id": "household.clothes-hangers",
+      "label": "Cintres",
+      "aliases": [
+        "cintres vêtements",
+        "cintres penderie",
+        "porte-manteaux"
+      ],
+      "category": "household",
+      "icon": "clothes-hanger",
+      "default_unit": "pack",
+      "tags": [
+        "rangement",
+        "penderie"
+      ]
+    },
+    {
+      "id": "household.clothespins",
+      "label": "Pinces à linge",
+      "aliases": [
+        "pinces de séchage",
+        "épingles à linge"
+      ],
+      "category": "household",
+      "icon": "clothespins",
+      "default_unit": "pack",
+      "tags": [
+        "linge",
+        "buanderie"
+      ]
+    },
+    {
+      "id": "household.food-storage-containers",
+      "label": "Boîtes hermétiques",
+      "aliases": [
+        "boîtes de conservation",
+        "boîtes alimentaires plastiques",
+        "boîtes en verre repas"
+      ],
+      "category": "household",
+      "icon": "storage-box",
+      "default_unit": "pack",
+      "tags": [
+        "conservation",
+        "rangement"
+      ]
+    },
+    {
+      "id": "household.light-bulbs",
+      "label": "Ampoules LED",
+      "aliases": [
+        "ampoules",
+        "ampoules e27",
+        "ampoules e14",
+        "lampes led"
+      ],
+      "category": "household",
+      "icon": "light-bulb",
+      "default_unit": "pack",
+      "tags": [
+        "éclairage",
+        "électricité"
+      ]
+    },
+    {
+      "id": "household.lighter",
+      "label": "Briquet",
+      "aliases": [
+        "allume-gaz",
+        "briquet ménager",
+        "allume-feu cuisine"
+      ],
+      "category": "household",
+      "icon": "lighter",
+      "default_unit": "unit",
+      "tags": [
+        "feu"
+      ]
+    },
+    {
+      "id": "household.matches",
+      "label": "Allumettes",
+      "aliases": [
+        "boîte d'allumettes",
+        "allumettes longues"
+      ],
+      "category": "household",
+      "icon": "matches",
+      "default_unit": "box",
+      "tags": [
+        "feu",
+        "cuisine"
+      ]
+    },
+    {
+      "id": "household.shoe-polish",
+      "label": "Cirage pour chaussures",
+      "aliases": [
+        "cirage cuir",
+        "crème pour chaussures",
+        "cirage noir"
+      ],
+      "category": "household",
+      "icon": "shoe-polish",
+      "default_unit": "unit",
+      "tags": [
+        "chaussures",
+        "entretien"
+      ]
+    },
+    {
+      "id": "household.super-glue",
+      "label": "Colle forte",
+      "aliases": [
+        "tube de colle rapide",
+        "colle instantanée",
+        "colle universelle"
+      ],
+      "category": "household",
+      "icon": "glue",
+      "default_unit": "unit",
+      "tags": [
+        "bricolage",
+        "réparation"
+      ]
+    },
+    {
+      "id": "household.trash-bags-30l",
+      "label": "Sacs poubelle 30L",
+      "aliases": [
+        "sacs poubelle 30 litres",
+        "sac poubelle 30l",
+        "sacs à lien coulissant 30l"
+      ],
+      "category": "household",
+      "icon": "trash-bags",
+      "default_unit": "roll",
+      "tags": [
+        "déchets",
+        "cuisine"
+      ]
+    },
+    {
+      "id": "household.trash-bags-50l",
+      "label": "Sacs poubelle 50L",
+      "aliases": [
+        "sacs poubelle 50 litres",
+        "sac poubelle 50l",
+        "grands sacs poubelle"
+      ],
+      "category": "household",
+      "icon": "trash-bags",
+      "default_unit": "roll",
+      "tags": [
+        "déchets",
+        "cuisine"
+      ]
+    },
+    {
+      "id": "household.vacuum-storage-bags",
+      "label": "Housses sous vide",
+      "aliases": [
+        "sacs sous vide pour vêtements",
+        "sacs de compression linge",
+        "housses de rangement sous vide"
+      ],
+      "category": "household",
+      "icon": "vacuum-storage-bag",
+      "default_unit": "pack",
+      "tags": [
+        "rangement",
+        "linge"
+      ]
+    },
+    {
+      "id": "household.water-filter-cartridges",
+      "label": "Cartouches filtrantes pour carafe",
+      "aliases": [
+        "filtres pour carafe d'eau",
+        "recharges carafe filtrante",
+        "filtres eau du robinet"
+      ],
+      "category": "household",
+      "icon": "water-filter",
+      "default_unit": "pack",
+      "tags": [
+        "eau",
+        "cuisine"
+      ]
+    },
+    {
+      "id": "hygiene.conditioner",
+      "label": "Après-shampooing",
+      "aliases": [
+        "après-shampoing",
+        "démêlant cheveux",
+        "baume capillaire"
+      ],
+      "category": "hygiene",
+      "icon": "conditioner",
+      "default_unit": "bottle",
+      "tags": [
+        "cheveux"
+      ]
+    },
+    {
+      "id": "hygiene.cotton-pads",
+      "label": "Cotons à démaquiller",
+      "aliases": [
+        "disques à démaquiller",
+        "cotons démaquillants",
+        "tampons de coton"
+      ],
+      "category": "hygiene",
+      "icon": "cotton-pads",
+      "default_unit": "pack",
+      "tags": [
+        "visage",
+        "soin"
+      ]
+    },
+    {
+      "id": "hygiene.cotton-swabs",
+      "label": "Cotons-tiges",
+      "aliases": [
+        "coton-tige",
+        "bâtonnets ouatés",
+        "cure-oreilles"
+      ],
+      "category": "hygiene",
+      "icon": "cotton-swabs",
+      "default_unit": "box",
+      "tags": [
+        "oreilles",
+        "soin"
+      ]
+    },
+    {
+      "id": "hygiene.dental-floss",
+      "label": "Fil dentaire",
+      "aliases": [
+        "soie dentaire",
+        "fil interdentaire",
+        "brossettes interdentaires"
+      ],
+      "category": "hygiene",
+      "icon": "dental-floss",
+      "default_unit": "unit",
+      "tags": [
+        "bucco-dentaire",
+        "dents"
+      ]
+    },
+    {
+      "id": "hygiene.deodorant",
+      "label": "Déodorant",
+      "aliases": [
+        "déo",
+        "déodorant bille",
+        "déodorant spray",
+        "anti-transpirant"
+      ],
+      "category": "hygiene",
+      "icon": "deodorant",
+      "default_unit": "unit",
+      "tags": [
+        "corps"
+      ]
+    },
+    {
+      "id": "hygiene.disposable-razors",
+      "label": "Rasoirs jetables",
+      "aliases": [
+        "rasoirs",
+        "lames de rasoir",
+        "rasoir mécanique"
+      ],
+      "category": "hygiene",
+      "icon": "disposable-razor",
+      "default_unit": "pack",
+      "tags": [
+        "rasage"
+      ]
+    },
+    {
+      "id": "hygiene.hand-cream",
+      "label": "Crème pour les mains",
+      "aliases": [
+        "crème mains",
+        "soin des mains",
+        "baume mains"
+      ],
+      "category": "hygiene",
+      "icon": "hand-cream",
+      "default_unit": "unit",
+      "tags": [
+        "mains",
+        "soin"
+      ]
+    },
+    {
+      "id": "hygiene.intimate-wash",
+      "label": "Soin lavant intime",
+      "aliases": [
+        "gel intime",
+        "nettoyant intime",
+        "lotion intime"
+      ],
+      "category": "hygiene",
+      "icon": "intimate-wash",
+      "default_unit": "bottle",
+      "tags": [
+        "hygiène intime"
+      ]
+    },
+    {
+      "id": "hygiene.lip-balm",
+      "label": "Baume à lèvres",
+      "aliases": [
+        "stick à lèvres",
+        "baume pour les lèvres",
+        "beurre de cacao lèvres"
+      ],
+      "category": "hygiene",
+      "icon": "lip-balm",
+      "default_unit": "unit",
+      "tags": [
+        "soin",
+        "visage"
+      ]
+    },
+    {
+      "id": "hygiene.liquid-hand-soap",
+      "label": "Savon liquide mains",
+      "aliases": [
+        "savon mains",
+        "flacon pompe savon",
+        "pousse-mousse mains"
+      ],
+      "category": "hygiene",
+      "icon": "liquid-hand-soap",
+      "default_unit": "bottle",
+      "tags": [
+        "mains",
+        "hygiène"
+      ]
+    },
+    {
+      "id": "hygiene.moisturizing-cream",
+      "label": "Crème hydratante",
+      "aliases": [
+        "crème pour le visage",
+        "crème de jour",
+        "lait corporel"
+      ],
+      "category": "hygiene",
+      "icon": "moisturizing-cream",
+      "default_unit": "unit",
+      "tags": [
+        "visage",
+        "soin"
+      ]
+    },
+    {
+      "id": "hygiene.mouthwash",
+      "label": "Bain de bouche",
+      "aliases": [
+        "solution bain de bouche",
+        "eau dentifrice"
+      ],
+      "category": "hygiene",
+      "icon": "mouthwash",
+      "default_unit": "bottle",
+      "tags": [
+        "bucco-dentaire",
+        "dents"
+      ]
+    },
+    {
+      "id": "hygiene.nail-clippers",
+      "label": "Coupe-ongles",
+      "aliases": [
+        "coupe ongles",
+        "ciseaux à ongles",
+        "lime à ongles"
+      ],
+      "category": "hygiene",
+      "icon": "nail-clippers",
+      "default_unit": "unit",
+      "tags": [
+        "ongles",
+        "soin"
+      ]
+    },
+    {
+      "id": "hygiene.sanitary-pads",
+      "label": "Serviettes hygiéniques",
+      "aliases": [
+        "protections périodiques",
+        "protège-slips",
+        "serviettes intimes"
+      ],
+      "category": "hygiene",
+      "icon": "sanitary-pads",
+      "default_unit": "pack",
+      "tags": [
+        "hygiène intime"
+      ]
+    },
+    {
+      "id": "hygiene.shampoo",
+      "label": "Shampooing",
+      "aliases": [
+        "shampoing",
+        "shampoing doux",
+        "shampoing antipelliculaire"
+      ],
+      "category": "hygiene",
+      "icon": "shampoo",
+      "default_unit": "bottle",
+      "tags": [
+        "cheveux"
+      ]
+    },
+    {
+      "id": "hygiene.shaving-foam",
+      "label": "Mousse à raser",
+      "aliases": [
+        "gel de rasage",
+        "gel à raser",
+        "mousse de rasage"
+      ],
+      "category": "hygiene",
+      "icon": "shaving-foam",
+      "default_unit": "bottle",
+      "tags": [
+        "rasage"
+      ]
+    },
+    {
+      "id": "hygiene.shower-gel",
+      "label": "Gel douche",
+      "aliases": [
+        "crème de douche",
+        "gel lavant corps",
+        "douche lavante"
+      ],
+      "category": "hygiene",
+      "icon": "shower-gel",
+      "default_unit": "bottle",
+      "tags": [
+        "corps",
+        "douche"
+      ]
+    },
+    {
+      "id": "hygiene.soap-bar",
+      "label": "Savonnette",
+      "aliases": [
+        "pain de savon",
+        "savon solide",
+        "savon corps"
+      ],
+      "category": "hygiene",
+      "icon": "soap-bar",
+      "default_unit": "unit",
+      "tags": [
+        "corps",
+        "douche",
+        "mains"
+      ]
+    },
+    {
+      "id": "hygiene.sunscreen",
+      "label": "Crème solaire",
+      "aliases": [
+        "protection solaire",
+        "spray solaire",
+        "lait solaire protecteur"
+      ],
+      "category": "hygiene",
+      "icon": "sunscreen",
+      "default_unit": "bottle",
+      "tags": [
+        "soin",
+        "soleil"
+      ]
+    },
+    {
+      "id": "hygiene.tampons",
+      "label": "Tampons périodiques",
+      "aliases": [
+        "tampons",
+        "tampons hygiéniques",
+        "tampons avec applicateur"
+      ],
+      "category": "hygiene",
+      "icon": "tampons",
+      "default_unit": "box",
+      "tags": [
+        "hygiène intime"
+      ]
+    },
+    {
+      "id": "hygiene.toothbrush",
+      "label": "Brosse à dents",
+      "aliases": [
+        "brosses à dents",
+        "tête brosse à dents",
+        "brosse à dents souple"
+      ],
+      "category": "hygiene",
+      "icon": "toothbrush",
+      "default_unit": "unit",
+      "tags": [
+        "bucco-dentaire",
+        "dents"
+      ]
+    },
+    {
+      "id": "hygiene.toothpaste",
+      "label": "Dentifrice",
+      "aliases": [
+        "pâte dentifrice",
+        "dentifrice blancheur",
+        "tube dentifrice"
+      ],
+      "category": "hygiene",
+      "icon": "toothpaste",
+      "default_unit": "unit",
+      "tags": [
+        "bucco-dentaire",
+        "dents"
+      ]
+    },
+    {
+      "id": "paper.aluminum-foil",
+      "label": "Papier aluminium",
+      "aliases": [
+        "aluminium ménager",
+        "rouleau aluminium",
+        "feuille alu"
+      ],
+      "category": "paper",
+      "icon": "aluminum-foil",
+      "default_unit": "roll",
+      "tags": [
+        "cuisine",
+        "emballage"
+      ]
+    },
+    {
+      "id": "paper.baking-paper",
+      "label": "Papier cuisson",
+      "aliases": [
+        "papier sulfurisé",
+        "feuilles de cuisson",
+        "rouleau papier cuisson"
+      ],
+      "category": "paper",
+      "icon": "baking-paper",
+      "default_unit": "roll",
+      "tags": [
+        "cuisine",
+        "emballage"
+      ]
+    },
+    {
+      "id": "paper.coffee-filters",
+      "label": "Filtres à café",
+      "aliases": [
+        "filtres cafetière",
+        "filtres papier pour café",
+        "filtres à café n4"
+      ],
+      "category": "paper",
+      "icon": "coffee-filters",
+      "default_unit": "box",
+      "tags": [
+        "cuisine",
+        "consommables"
+      ]
+    },
+    {
+      "id": "paper.freezer-bags",
+      "label": "Sacs congélation",
+      "aliases": [
+        "sachets congélation",
+        "sacs hermétiques congélation",
+        "sacs zip fraîcheur"
+      ],
+      "category": "paper",
+      "icon": "freezer-bags",
+      "default_unit": "box",
+      "tags": [
+        "cuisine",
+        "conservation"
+      ]
+    },
+    {
+      "id": "paper.paper-napkins",
+      "label": "Serviettes en papier",
+      "aliases": [
+        "serviettes de table papier",
+        "serviettes jetables"
+      ],
+      "category": "paper",
+      "icon": "paper-napkins",
+      "default_unit": "pack",
+      "tags": [
+        "table",
+        "consommables"
+      ]
+    },
+    {
+      "id": "paper.paper-towels",
+      "label": "Essuie-tout",
+      "aliases": [
+        "sopalin",
+        "papier absorbant",
+        "rouleaux essuie-tout"
+      ],
+      "category": "paper",
+      "icon": "paper-towels",
+      "default_unit": "pack",
+      "tags": [
+        "cuisine",
+        "consommables"
+      ]
+    },
+    {
+      "id": "paper.plastic-wrap",
+      "label": "Film alimentaire",
+      "aliases": [
+        "film étirable",
+        "film fraîcheur",
+        "film transparent"
+      ],
+      "category": "paper",
+      "icon": "plastic-wrap",
+      "default_unit": "roll",
+      "tags": [
+        "cuisine",
+        "emballage"
+      ]
+    },
+    {
+      "id": "paper.pocket-tissues",
+      "label": "Mouchoirs de poche",
+      "aliases": [
+        "paquets de mouchoirs",
+        "étuis mouchoirs",
+        "mouchoirs jetables"
+      ],
+      "category": "paper",
+      "icon": "pocket-tissues",
+      "default_unit": "pack",
+      "tags": [
+        "soin",
+        "consommables"
+      ]
+    },
+    {
+      "id": "paper.tissues-box",
+      "label": "Mouchoirs en boîte",
+      "aliases": [
+        "boîte de mouchoirs",
+        "mouchoirs boîte distributrice"
+      ],
+      "category": "paper",
+      "icon": "tissues-box",
+      "default_unit": "box",
+      "tags": [
+        "soin",
+        "consommables"
+      ]
+    },
+    {
+      "id": "paper.toilet-paper",
+      "label": "Papier toilette",
+      "aliases": [
+        "papier wc",
+        "papier hygiénique",
+        "rouleaux de papier toilette"
+      ],
+      "category": "paper",
+      "icon": "toilet-paper",
+      "default_unit": "pack",
+      "tags": [
+        "sanitaires",
+        "consommables"
+      ]
+    },
+    {
+      "id": "pets.bird-food",
+      "label": "Graines pour oiseaux",
+      "aliases": [
+        "nourriture pour oiseaux",
+        "mélange graines oiseaux du jardin",
+        "boules de graisse oiseaux"
+      ],
+      "category": "pets",
+      "icon": "bird-food",
+      "default_unit": "bag",
+      "tags": [
+        "oiseaux",
+        "alimentation"
+      ]
+    },
+    {
+      "id": "pets.cat-litter",
+      "label": "Litière pour chat",
+      "aliases": [
+        "litière chat",
+        "litière minérale",
+        "litière agglomérante"
+      ],
+      "category": "pets",
+      "icon": "cat-litter",
+      "default_unit": "bag",
+      "tags": [
+        "chat",
+        "litière"
+      ]
+    },
+    {
+      "id": "pets.cat-treats",
+      "label": "Friandises pour chat",
+      "aliases": [
+        "friandises chat",
+        "bâtonnets pour chat",
+        "snacks pour chat"
+      ],
+      "category": "pets",
+      "icon": "pet-treats",
+      "default_unit": "pack",
+      "tags": [
+        "chat",
+        "récompense"
+      ]
+    },
+    {
+      "id": "pets.dog-treats",
+      "label": "Friandises pour chien",
+      "aliases": [
+        "friandises chien",
+        "bâtonnets à mâcher",
+        "biscuits pour chien"
+      ],
+      "category": "pets",
+      "icon": "pet-treats",
+      "default_unit": "pack",
+      "tags": [
+        "chien",
+        "récompense"
+      ]
+    },
+    {
+      "id": "pets.dog-waste-bags",
+      "label": "Sacs à déjections canines",
+      "aliases": [
+        "sacs déjections chien",
+        "sacs ramasse-crottes",
+        "rouleaux sacs chien"
+      ],
+      "category": "pets",
+      "icon": "dog-waste-bags",
+      "default_unit": "roll",
+      "tags": [
+        "chien",
+        "promenade"
+      ]
+    },
+    {
+      "id": "pets.dry-cat-food",
+      "label": "Croquettes pour chat",
+      "aliases": [
+        "croquettes chat",
+        "nourriture sèche chat",
+        "croquettes pour chats stérilisés"
+      ],
+      "category": "pets",
+      "icon": "pet-food-cat",
+      "default_unit": "bag",
+      "tags": [
+        "chat",
+        "alimentation"
+      ]
+    },
+    {
+      "id": "pets.dry-dog-food",
+      "label": "Croquettes pour chien",
+      "aliases": [
+        "croquettes chien",
+        "nourriture sèche chien",
+        "croquettes adulte chien"
+      ],
+      "category": "pets",
+      "icon": "pet-food-dog",
+      "default_unit": "bag",
+      "tags": [
+        "chien",
+        "alimentation"
+      ]
+    },
+    {
+      "id": "pets.flea-tick-treatment",
+      "label": "Pipettes antiparasitaires",
+      "aliases": [
+        "antiparasitaire chien et chat",
+        "pipettes anti-puces",
+        "traitement tiques puces"
+      ],
+      "category": "pets",
+      "icon": "flea-treatment",
+      "default_unit": "box",
+      "tags": [
+        "santé-animale",
+        "soin"
+      ]
+    },
+    {
+      "id": "pets.pet-shampoo",
+      "label": "Shampooing pour animaux",
+      "aliases": [
+        "shampoing pour chien",
+        "shampoing pour chat",
+        "shampoing animal"
+      ],
+      "category": "pets",
+      "icon": "pet-shampoo",
+      "default_unit": "bottle",
+      "tags": [
+        "soin",
+        "hygiène-animale"
+      ]
+    },
+    {
+      "id": "pets.wet-cat-food",
+      "label": "Pâtée pour chat",
+      "aliases": [
+        "pâtée chat",
+        "sachets fraîcheur chat",
+        "boîtes pour chat"
+      ],
+      "category": "pets",
+      "icon": "pet-wet-food-cat",
+      "default_unit": "box",
+      "tags": [
+        "chat",
+        "alimentation"
+      ]
+    },
+    {
+      "id": "pets.wet-dog-food",
+      "label": "Pâtée pour chien",
+      "aliases": [
+        "pâtée chien",
+        "boîtes pour chien",
+        "terrines chien"
+      ],
+      "category": "pets",
+      "icon": "pet-wet-food-dog",
+      "default_unit": "box",
+      "tags": [
+        "chien",
+        "alimentation"
+      ]
+    }
+  ]
+}

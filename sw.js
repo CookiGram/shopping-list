@@ -25,6 +25,7 @@ const PRECACHE = [
   "./js/tags.js",
   "./data/cookigram-catalog.json",
   "./data/shopping-dict.json",
+  "./data/dictionary/non-food.fr.json",
   "./data/aisles.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
