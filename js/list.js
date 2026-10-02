@@ -290,14 +290,11 @@ function sectionElement(kind, groups, { iconBase, isFavorite, isEssential }) {
           } catch {
             favorite = !!item.favorite;
           }
-          // Slugless custom items cannot be re-proposed: no pin (null).
           let essential = null;
-          if (item?.slug) {
-            try {
-              essential = !!isEssential(item);
-            } catch {
-              essential = !!item.essential;
-            }
+          try {
+            essential = !!isEssential(item);
+          } catch {
+            essential = !!item.essential;
           }
           return itemRow(item, meta, { iconBase, favorite, essential });
         }),

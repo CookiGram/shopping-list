@@ -12,6 +12,7 @@ import {
   getEssentials,
   isEssential,
   toggleEssential,
+  essentialKey,
   toggleFavorite,
   isFavorite,
   addItem,
@@ -85,7 +86,7 @@ test("essentials 6/11: a new trip proposes only user-marked essentials", () => {
   // "farine" carries the catalog staple:true flag but is NOT marked.
   toggleEssential({ slug: "ail", name: "Ail" }); // staple:false, marked
   toggleEssential({ slug: "lessive", name: "Lessive" }); // household, marked
-  const candidates = userEssentialCandidates(getEssentials(), { onListSlugs: [] });
+  const candidates = userEssentialCandidates(getEssentials(), { onListKeys: [] });
   assert.deepEqual(
     candidates.map((candidate) => candidate.slug).sort(),
     ["ail", "lessive"],
@@ -93,16 +94,16 @@ test("essentials 6/11: a new trip proposes only user-marked essentials", () => {
   // Already-on-list essentials are not proposed again.
   addItem({ name: "Ail", slug: "ail" });
   const again = userEssentialCandidates(getEssentials(), {
-    onListSlugs: getItems().map((item) => item.slug).filter(Boolean),
+    onListKeys: getItems().map((item) => item.slug ?? essentialKey({ name: item.name })),
   });
   assert.deepEqual(again.map((candidate) => candidate.slug), ["lessive"]);
 });
 
 test("essentials 7/11: accepting an essential adds a normal list item", () => {
   toggleEssential({ slug: "ail", name: "Ail" });
-  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }));
+  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
   const validated = ritual.validate("ail");
-  assert.deepEqual(validated, { slug: "ail", name: "Ail" });
+  assert.deepEqual(validated, { key: "ail", slug: "ail", name: "Ail" });
   const item = addItem({ name: validated.name, slug: validated.slug });
   assert.equal(item.name, "Ail");
   assert.equal(item.slug, "ail");
@@ -113,7 +114,7 @@ test("essentials 7/11: accepting an essential adds a normal list item", () => {
 test("essentials 8/11: ignoring an essential keeps its permanent status", () => {
   toggleEssential({ slug: "ail", name: "Ail" });
   toggleEssential({ slug: "lait", name: "Lait" });
-  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }));
+  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
   assert.equal(ritual.reject("lait"), true);
   ritual.ignoreRest();
   assert.equal(isEssential({ slug: "lait", name: "Lait" }), true);
@@ -124,17 +125,17 @@ test("essentials 8/11: ignoring an essential keeps its permanent status", () => 
 test("essentials 9/11: ignore-rest closes the proposals for the current trip", () => {
   toggleEssential({ slug: "ail", name: "Ail" });
   toggleEssential({ slug: "lait", name: "Lait" });
-  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }));
+  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
   ritual.validate("ail");
   const rest = ritual.ignoreRest();
   assert.deepEqual(rest.map((candidate) => candidate.slug), ["lait"]);
   assert.deepEqual(ritual.pending(), []);
   assert.equal(ritual.isDone(), true);
   // Trip memory (decided slugs) keeps them away until the next trip.
-  const decided = ritual.decisions().map((entry) => entry.slug);
+  const decided = ritual.decisions().map((entry) => entry.key);
   const later = userEssentialCandidates(getEssentials(), {
-    onListSlugs: ["ail"],
-    decidedSlugs: decided,
+    onListKeys: ["ail"],
+    decidedKeys: decided,
   });
   assert.deepEqual(later, []);
 });
@@ -143,11 +144,11 @@ test("essentials 10/11: essentials return on the next new trip", () => {
   toggleEssential({ slug: "ail", name: "Ail" });
   toggleEssential({ slug: "lait", name: "Lait" });
   // Trip 1: reject one, ignore the rest — nothing persists.
-  const trip1 = createRitual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }));
+  const trip1 = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
   trip1.reject("lait");
   trip1.ignoreRest();
   // Trip 2: fresh trip memory proposes every kept essential again.
-  const trip2 = createRitual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }));
+  const trip2 = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
   assert.deepEqual(
     trip2.pending().map((candidate) => candidate.slug).sort(),
     ["ail", "lait"],
@@ -157,15 +158,69 @@ test("essentials 10/11: essentials return on the next new trip", () => {
 test("essentials 11/11: no catalog flag or default seed recreates essentials", () => {
   // Fresh store: nothing seeded.
   assert.deepEqual(getEssentials(), []);
-  assert.deepEqual(userEssentialCandidates(getEssentials(), { onListSlugs: [] }), []);
+  assert.deepEqual(userEssentialCandidates(getEssentials(), { onListKeys: [] }), []);
   // The catalog staple:true flag alone changes nothing: no ranking boost…
   const farine = indexSearchIngredient(searchEntries()[2]); // staple:true
   assert.equal(scoreSearchMatch(farine, "farine").boosts.staple, 0);
   // …and no proposal.
   assert.equal(
-    userEssentialCandidates(getEssentials(), { onListSlugs: [] }).some(
+    userEssentialCandidates(getEssentials(), { onListKeys: [] }).some(
       (candidate) => candidate.slug === "farine",
     ),
     false,
   );
+});
+
+test("essentials custom 1/5: slugless products are markable via their name: key", () => {
+  const marked = toggleEssential({ slug: null, name: "Truc maison" });
+  assert.deepEqual(marked, { essential: true, key: "name:truc maison" });
+  assert.equal(isEssential({ slug: null, name: "Truc maison" }), true);
+  // Lookup is normalized (case/accents/spacing-insensitive).
+  assert.equal(isEssential({ name: "  TRUC   MAISON " }), true);
+  assert.equal(isEssential({ name: "Crème maison" }), false);
+  const unmarked = toggleEssential({ slug: null, name: "truc maison" });
+  assert.deepEqual(unmarked, { essential: false, key: "name:truc maison" });
+});
+
+test("essentials custom 2/5: custom essential persists across reload", () => {
+  const storage = makeMemoryStorage();
+  configureStore({ storage });
+  toggleEssential({ slug: null, name: "Truc maison" });
+  configureStore({ storage }); // simulate a reload on the same backend
+  assert.equal(isEssential({ name: "Truc maison" }), true);
+  assert.deepEqual(getEssentials(), [
+    { key: "name:truc maison", slug: null, name: "Truc maison", addedAt: getEssentials()[0].addedAt },
+  ]);
+});
+
+test("essentials custom 3/5: custom essential is proposed trip after trip", () => {
+  toggleEssential({ slug: null, name: "Truc maison" });
+  const trip1 = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
+  assert.deepEqual(trip1.pending(), [{ key: "name:truc maison", slug: null, name: "Truc maison" }]);
+  // Reject by stable key; the status survives and the next trip re-proposes.
+  assert.equal(trip1.reject("name:truc maison"), true);
+  assert.equal(isEssential({ name: "Truc maison" }), true);
+  const trip2 = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
+  assert.deepEqual(trip2.pending().map((candidate) => candidate.key), ["name:truc maison"]);
+});
+
+test("essentials custom 4/5: custom on the list is not re-proposed (normalized key match)", () => {
+  toggleEssential({ slug: null, name: "Truc maison" });
+  addItem({ name: "truc   MAISON" }); // same product, different casing/spacing
+  const onListKeys = getItems().map((item) => item.slug ?? essentialKey({ name: item.name }));
+  assert.deepEqual(onListKeys, ["name:truc maison"]);
+  assert.deepEqual(userEssentialCandidates(getEssentials(), { onListKeys }), []);
+});
+
+test("essentials custom 5/5: accepting a custom essential adds a normal custom item", () => {
+  toggleEssential({ slug: null, name: "Truc maison" });
+  const ritual = createRitual(userEssentialCandidates(getEssentials(), { onListKeys: [] }));
+  const validated = ritual.validate("name:truc maison");
+  assert.deepEqual(validated, { key: "name:truc maison", slug: null, name: "Truc maison" });
+  // Same call shape as the app lane: no catalog hit → provenance undefined.
+  const item = addItem({ name: validated.name, slug: validated.slug ?? null, provenance: undefined });
+  assert.equal(item.slug, null);
+  assert.deepEqual(item.provenance, { source: "custom" });
+  assert.equal(item.checked, false);
+  assert.ok(item.id);
 });

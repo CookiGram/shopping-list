@@ -38,18 +38,21 @@ test("staples: decisions constant", () => {
   assert.deepEqual([...STAPLE_RITUAL_DECISIONS], ["added", "rejected", "ignored"]);
 });
 
-test("createRitual: dedup by slug, drop empties, copies", () => {
+test("createRitual: dedup by key, drop empties, copies", () => {
   const ritual = createRitual([
     { slug: "farine", name: "Farine" },
     { slug: "farine", name: "Farine dup" },
-    { slug: "", name: "Blank" },
+    { slug: "", name: "Blank" }, // slugless: kept under its name: key
+    { slug: "", name: "blank" }, // same key: deduped
     null,
+    { name: "" }, // unkeyable: dropped
     { slug: "lait" }, // name defaults to slug
   ]);
-  assert.equal(ritual.total, 2);
+  assert.equal(ritual.total, 3);
   assert.deepEqual(ritual.candidates(), [
-    { slug: "farine", name: "Farine" },
-    { slug: "lait", name: "lait" },
+    { key: "farine", slug: "farine", name: "Farine" },
+    { key: "name:blank", slug: null, name: "Blank" },
+    { key: "lait", slug: "lait", name: "lait" },
   ]);
   ritual.candidates()[0].name = "MUT";
   assert.equal(ritual.candidates()[0].name, "Farine");
@@ -63,7 +66,7 @@ test("createRitual: validate/reject/ignoreRest/decisions/isDone", () => {
     { slug: "c", name: "C" },
   ]);
   assert.deepEqual(ritual.pending().map((c) => c.slug), ["a", "b", "c"]);
-  assert.deepEqual(ritual.validate("a"), { slug: "a", name: "A" });
+  assert.deepEqual(ritual.validate("a"), { key: "a", slug: "a", name: "A" });
   assert.equal(ritual.reject("b"), true);
   // Unknown / already-decided → null/false.
   assert.equal(ritual.validate("zzz"), null);
@@ -71,16 +74,16 @@ test("createRitual: validate/reject/ignoreRest/decisions/isDone", () => {
   assert.equal(ritual.reject("b"), false);
   assert.deepEqual(ritual.pending().map((c) => c.slug), ["c"]);
   const rest = ritual.ignoreRest();
-  assert.deepEqual(rest, [{ slug: "c", name: "C" }]);
+  assert.deepEqual(rest, [{ key: "c", slug: "c", name: "C" }]);
   assert.equal(ritual.isDone(), true);
   assert.deepEqual(ritual.pending(), []);
   // Post-ignore calls are terminal.
   assert.equal(ritual.validate("c"), null);
   assert.equal(ritual.reject("c"), false);
   assert.deepEqual(ritual.decisions(), [
-    { slug: "a", name: "A", decision: "added" },
-    { slug: "b", name: "B", decision: "rejected" },
-    { slug: "c", name: "C", decision: "ignored" },
+    { key: "a", slug: "a", name: "A", decision: "added" },
+    { key: "b", slug: "b", name: "B", decision: "rejected" },
+    { key: "c", slug: "c", name: "C", decision: "ignored" },
   ]);
 });
 
@@ -88,7 +91,7 @@ test("createRitual: full decide without ignoreRest", () => {
   const ritual = createRitual([{ slug: "a", name: "A" }]);
   ritual.validate("a");
   assert.equal(ritual.isDone(), true);
-  assert.deepEqual(ritual.decisions(), [{ slug: "a", name: "A", decision: "added" }]);
+  assert.deepEqual(ritual.decisions(), [{ key: "a", slug: "a", name: "A", decision: "added" }]);
 });
 
 test("filterCandidates: onList + rejected-cooldown suppressed; added/ignored re-proposed", () => {

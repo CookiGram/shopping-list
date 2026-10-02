@@ -31,6 +31,7 @@ import {
   getEssentials,
   isEssential,
   toggleEssential,
+  essentialKey,
   canUndoCheck,
   undoLastCheck,
 } from "./store.js";
@@ -130,11 +131,16 @@ function renderSuggestions() {
   rows.forEach((suggestion, position) => {
     const li = suggestionRow(rowKey(suggestion, position), rowLabel(suggestion), rowSub(suggestion), rowIcon(suggestion));
     li.firstElementChild?.addEventListener("click", () => activateSuggestion(suggestion));
-    // Pin toggle on catalog rows only (free-add/tag rows have no stable slug).
-    if (suggestion.kind === "item" && suggestion.slug) {
+    // Pin toggle on catalog rows (stable slug) and free-add rows
+    // (stable name: key). Tag rows are filters, not products: no pin.
+    const markable = (suggestion.kind === "item" && suggestion.slug) || suggestion.kind === "free-add";
+    if (markable) {
       try {
-        const ref = { slug: suggestion.slug, name: rowLabel(suggestion) };
-        const pin = essentialButton(suggestion.slug, isEssential(ref));
+        const ref = {
+          slug: suggestion.kind === "item" ? suggestion.slug : null,
+          name: rowLabel(suggestion),
+        };
+        const pin = essentialButton(essentialKey(ref), isEssential(ref));
         pin.addEventListener("click", () => {
           try {
             const { essential } = toggleEssential(ref);
@@ -233,15 +239,15 @@ function essentialCandidates() {
     essentials = [];
   }
   return userEssentialCandidates(essentials, {
-    onListSlugs: getItems().map((item) => item.slug).filter(Boolean),
-    decidedSlugs: [...tripDecided],
+    onListKeys: getItems().map((item) => item.slug ?? essentialKey({ name: item.name })),
+    decidedKeys: [...tripDecided],
   });
 }
 
 let essentialsDismissed = false;
-/* Slugs validated/rejected during the current trip (memory only: the
- * ritual is trip-scoped, so every kept essential is proposed again on
- * the next trip). Cleared together with essentialsDismissed. */
+/* Stable keys validated/rejected during the current trip (memory only:
+ * the ritual is trip-scoped, so every kept essential is proposed again
+ * on the next trip). Cleared together with essentialsDismissed. */
 const tripDecided = new Set();
 
 function renderEssentials() {
@@ -273,16 +279,16 @@ function renderEssentials() {
   section.hidden = !enabled || pending.length === 0;
   if (!enabled || pending.length === 0) return;
   for (const candidate of pending) {
-    const li = essentialChip(candidate.slug, candidate.name, false);
+    const li = essentialChip(candidate.key, candidate.name, false);
     li.firstElementChild?.addEventListener("click", () => {
-      const validated = ritual.validate(candidate.slug);
+      const validated = ritual.validate(candidate.key);
       if (!validated) return;
-      tripDecided.add(validated.slug);
+      tripDecided.add(validated.key);
       try {
-        const found = catalog ? findEntry(catalog, validated.slug) : undefined;
+        const found = validated.slug && catalog ? findEntry(catalog, validated.slug) : undefined;
         addItem({
           name: validated.name,
-          slug: validated.slug,
+          slug: validated.slug ?? null,
           provenance: found ? { source: provenanceForKind(found.kind) } : undefined,
         });
         showToast(`« ${validated.name} » ajouté`);
@@ -298,8 +304,8 @@ function renderEssentials() {
     dismiss.title = "Pas cette fois";
     dismiss.textContent = "✕";
     dismiss.addEventListener("click", () => {
-      if (!ritual.reject(candidate.slug)) return;
-      tripDecided.add(candidate.slug);
+      if (!ritual.reject(candidate.key)) return;
+      tripDecided.add(candidate.key);
       renderEssentials();
     });
     li.appendChild(dismiss);

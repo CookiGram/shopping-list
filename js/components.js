@@ -58,8 +58,8 @@ export function checkboxRow({ id, name, qty = "", icon = "", checked = false, fa
   }
 
   row.append(cb, iconEl, copy, heartButton(id, favorite));
-  // essential === null hides the pin (slugless custom items cannot be
-  // re-proposed, so they cannot be marked as essentials).
+  // essential === null hides the pin (only when the caller omits it;
+  // custom items are markable via their stable name: key).
   if (essential !== null) row.appendChild(essentialButton(id, essential));
   li.appendChild(row);
   return li;
@@ -102,12 +102,12 @@ export function aisleCard(aisle, rows = []) {
   return section;
 }
 
-/** Essentials quick-add chip. */
-export function essentialChip(slug, name, active = false) {
+/** Essentials quick-add chip (`key`: stable candidate key, slug or name:…). */
+export function essentialChip(key, name, active = false) {
   const li = el("li");
   const chip = el("button", "chip", {
     type: "button",
-    "data-essential": slug,
+    "data-essential": key,
     "aria-pressed": active ? "true" : "false",
   });
   const plus = el("span", "chip-add", { "aria-hidden": "true" });

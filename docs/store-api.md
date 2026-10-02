@@ -192,15 +192,17 @@ runs the ritual, and turns `validate()` results into
 verdicts are kept in memory only (cleared when the trip closes),
 so every kept essential is proposed again on the next trip.
 Ignoring or rejecting a proposal never removes the essential.
-Legacy `noteStapleDecision()` memory is preserved in storage but
-no longer consulted by the essentials ritual.
+Candidates are matched by stable key (slug, or `name:<normalized>`
+for custom products), so custom essentials are proposed exactly
+like catalog ones. Legacy `noteStapleDecision()` memory is preserved
+in storage but no longer consulted by the essentials ritual.
 
 ```js
 import { createRitual, userEssentialCandidates } from "./staples.js";
 
 const ritual = createRitual(userEssentialCandidates(getEssentials(), {
-  onListSlugs: getItems().map((i) => i.slug).filter(Boolean),
-  decidedSlugs: [...tripDecided], // memory-only trip verdicts
+  onListKeys: getItems().map((i) => i.slug ?? essentialKey({ name: i.name })),
+  decidedKeys: [...tripDecided], // memory-only trip verdicts
 }));
 ritual.pending();        // [{slug, name}] still undecided
 ritual.validate("farine"); // → candidate (caller: addItem it)
