@@ -46,6 +46,7 @@ import {
 } from "./tags.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
+import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
 import {
   essentialChip,
   essentialButton,
@@ -66,6 +67,12 @@ const els = {
   search: null,
   clear: null,
   suggestions: null,
+  voice: null,
+  voiceReview: null,
+  voiceTranscript: null,
+  voiceChips: null,
+  voiceConfirm: null,
+  voiceCancel: null,
   essentials: null,
   essentialsChips: null,
   list: null,
@@ -80,6 +87,8 @@ let listHandle = null;
 let ritual = createRitual([]);
 let suggestionRows = [];
 let highlight = -1;
+let voiceCandidates = [];
+let voiceRecognition = null;
 
 const provenanceForKind = (kind) =>
   ({ culinary: "cookigram", household: "dict" })[kind] ?? "custom";
@@ -227,6 +236,161 @@ function activateSuggestion(suggestion) {
 function updateClearButton() {
   if (!els.clear) return;
   els.clear.hidden = !(els.search?.value ?? "").trim();
+}
+
+/* ------------------------------------------------------------------ */
+/* Voice-add prototype                                                 */
+/* ------------------------------------------------------------------ */
+
+const speechRecognitionCtor = () =>
+  globalThis.SpeechRecognition ?? globalThis.webkitSpeechRecognition ?? null;
+
+function resolveVoiceCandidate(label) {
+  const found = catalog ? findEntry(catalog, label) : undefined;
+  if (!found) {
+    return {
+      label: String(label ?? "").trim(),
+      name: String(label ?? "").trim(),
+      slug: null,
+      provenance: { source: "custom" },
+    };
+  }
+  return {
+    label: found.entry.name,
+    name: found.entry.name,
+    slug: found.entry.slug ?? null,
+    provenance: { source: provenanceForKind(found.kind) },
+  };
+}
+
+function renderVoiceReview(transcript = "") {
+  if (!els.voiceReview || !els.voiceChips || !els.voiceConfirm) return;
+  els.voiceReview.hidden = voiceCandidates.length === 0;
+  els.voiceConfirm.disabled = voiceCandidates.length === 0;
+  if (els.voiceTranscript) els.voiceTranscript.textContent = transcript ? `« ${transcript} »` : "";
+  els.voiceChips.replaceChildren();
+
+  voiceCandidates.forEach((candidate, index) => {
+    const chip = document.createElement("span");
+    chip.className = "voice-chip";
+    const label = document.createElement("span");
+    label.textContent = candidate.label;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "voice-chip-remove";
+    remove.setAttribute("aria-label", `Retirer ${candidate.label}`);
+    remove.textContent = "×";
+    remove.addEventListener("click", () => {
+      voiceCandidates.splice(index, 1);
+      renderVoiceReview(transcript);
+    });
+    chip.append(label, remove);
+    els.voiceChips.appendChild(chip);
+  });
+}
+
+function resetVoiceReview() {
+  voiceCandidates = [];
+  if (els.voiceReview) els.voiceReview.hidden = true;
+  if (els.voiceTranscript) els.voiceTranscript.textContent = "";
+  els.voiceChips?.replaceChildren();
+}
+
+function stopListeningState() {
+  els.voice?.classList.remove("is-listening");
+  els.voice?.setAttribute("aria-pressed", "false");
+}
+
+function wireVoice() {
+  const Recognition = speechRecognitionCtor();
+  if (!Recognition || !els.voice) return;
+
+  els.voice.hidden = false;
+  els.voice.setAttribute("aria-pressed", "false");
+
+  els.voice.addEventListener("click", () => {
+    resetVoiceReview();
+    try {
+      voiceRecognition?.abort?.();
+    } catch {
+      /* stale recognition: start a fresh one below */
+    }
+
+    const recognition = new Recognition();
+    voiceRecognition = recognition;
+    recognition.lang = "fr-FR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      if (voiceRecognition !== recognition) return;
+      els.voice?.classList.add("is-listening");
+      els.voice?.setAttribute("aria-pressed", "true");
+      showToast("Je vous écoute…");
+    };
+
+    recognition.onresult = (event) => {
+      if (voiceRecognition !== recognition) return;
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim?.() ?? "";
+      const vocabulary = buildVoiceVocabulary(searchIndex);
+      const parts = splitVoiceTranscript(transcript, vocabulary);
+      voiceCandidates = parts.map(resolveVoiceCandidate).filter((item) => item.name);
+      renderVoiceReview(transcript);
+      if (!voiceCandidates.length) showToast("Je n'ai rien compris");
+    };
+
+    recognition.onerror = (event) => {
+      if (voiceRecognition !== recognition) return;
+      if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+        showToast("Autorisez le micro pour dicter");
+      } else if (event?.error !== "aborted") {
+        showToast("Dictée indisponible");
+      }
+      stopListeningState();
+    };
+
+    recognition.onend = () => {
+      if (voiceRecognition !== recognition) return;
+      stopListeningState();
+      voiceRecognition = null;
+    };
+
+    try {
+      recognition.start();
+    } catch {
+      stopListeningState();
+      showToast("Dictée indisponible");
+    }
+  });
+
+  els.voiceCancel?.addEventListener("click", () => {
+    resetVoiceReview();
+    els.search?.focus();
+  });
+
+  els.voiceConfirm?.addEventListener("click", () => {
+    if (!voiceCandidates.length) return;
+    let added = 0;
+    for (const candidate of voiceCandidates) {
+      try {
+        addItem({
+          name: candidate.name,
+          slug: candidate.slug,
+          provenance: candidate.provenance,
+        });
+        added += 1;
+      } catch {
+        /* Keep adding the other recognized candidates. */
+      }
+    }
+    resetVoiceReview();
+    showToast(
+      added
+        ? `${added} article${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}`
+        : "Ajout impossible",
+    );
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -608,6 +772,12 @@ async function boot() {
   els.search = $("#shopping-search");
   els.clear = $("#shopping-clear");
   els.suggestions = $("#shopping-suggestions");
+  els.voice = $("#shopping-voice");
+  els.voiceReview = $("#voice-review");
+  els.voiceTranscript = $("#voice-transcript");
+  els.voiceChips = $("#voice-chips");
+  els.voiceConfirm = $("#voice-confirm");
+  els.voiceCancel = $("#voice-cancel");
   els.essentials = $("#essentials");
   els.essentialsChips = $("#essentials-chips");
   els.list = $("#list");
@@ -647,6 +817,7 @@ async function boot() {
   });
 
   wireSearch();
+  wireVoice();
   wireActions();
   renderEssentials();
   renderHistory();
