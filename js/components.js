@@ -66,7 +66,7 @@ export function qtyStepper(id, name, qtyInt) {
   return group;
 }
 
-export function checkboxRow({ id, name, qty = "", icon = "", checked = false, favorite = false, essential = null }) {
+export function checkboxRow({ id, name, qty = "", icon = "", checked = false, favorite = false, essential = null, frozen = false }) {
   const li = el("li", "shopping-item" + (checked ? " shopping-item--checked" : ""), {
     "data-shopping-item": id,
   });
@@ -95,11 +95,15 @@ export function checkboxRow({ id, name, qty = "", icon = "", checked = false, fa
   }
 
   // #7 row order: checkbox, copy, stepper, pin, heart.
-  row.append(cb, iconEl, copy, qtyStepper(id, name, parseQtyInt(qtyText)));
-  // essential === null hides the pin (only when the caller omits it;
-  // custom items are markable via their stable name: key).
-  if (essential !== null) row.appendChild(essentialButton(id, essential));
-  row.appendChild(heartButton(id, favorite));
+  // #9: frozen rows keep check/uncheck only; edit controls hide.
+  row.append(cb, iconEl, copy);
+  if (!frozen) {
+    row.append(qtyStepper(id, name, parseQtyInt(qtyText)));
+    // essential === null hides the pin (only when the caller omits it;
+    // custom items are markable via their stable name: key).
+    if (essential !== null) row.appendChild(essentialButton(id, essential));
+    row.appendChild(heartButton(id, favorite));
+  }
   li.appendChild(row);
   return li;
 }

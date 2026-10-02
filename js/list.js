@@ -225,6 +225,7 @@ export function itemRow(item, meta, { iconBase = DEFAULT_ICON_BASE, favorite = n
     checked: !!item.checked,
     favorite: favorite ?? !!item.favorite,
     essential,
+    frozen: !!item.frozen,
   });
   if (meta?.tags?.length) {
     const copy = li.querySelector(".shopping-item-copy");

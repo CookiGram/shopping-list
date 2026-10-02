@@ -85,6 +85,12 @@ Current list:
 - `clearChecked()` → removed items (hand them to
   `history.closeSession` when closing a shopping session).
 - `clearAll()` → number removed.
+- `freezeEditable()` → number newly frozen (#9 global ✓). Marks
+  every item lacking `frozen`, persists, emits `items:freeze`.
+  Absent flag reads as editable (no migration). Frozen items keep
+  check/uncheck; their edit controls hide.
+- `hasEditable(items)` → bool (pure). True when at least one item
+  lacks `frozen`; drives ✓ visibility.
 
 Frequency signal (ranking help for the search/app lanes):
 

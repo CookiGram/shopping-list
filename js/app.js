@@ -34,6 +34,8 @@ import {
   essentialKey,
   canUndoCheck,
   undoLastCheck,
+  freezeEditable,
+  hasEditable,
 } from "./store.js";
 import { mountList, groupItemsByAisle, DEFAULT_ICON_BASE, TAG_EVENT } from "./list.js";
 import {
@@ -429,8 +431,34 @@ function refreshUndoButton() {
   else btn.setAttribute("disabled", "");
 }
 
+/* #9 global validate: the ✓ freezes every editable item at once.
+ * Visible only while something remains editable; frozen rows keep
+ * check/uncheck and hide their edit controls (see list.js). */
+function refreshValidateButton() {
+  const btn = document.querySelector("[data-validate-list]");
+  if (!btn) return;
+  let editable = false;
+  try {
+    editable = hasEditable(getItems());
+  } catch {
+    editable = false;
+  }
+  btn.hidden = !editable;
+}
+
 function wireActions() {
   refreshUndoButton();
+  refreshValidateButton();
+  document.querySelector("[data-validate-list]")?.addEventListener("click", () => {
+    let frozen = 0;
+    try {
+      frozen = freezeEditable();
+    } catch {
+      frozen = 0;
+    }
+    refreshValidateButton();
+    showToast(frozen ? "Liste validée" : "Rien à valider");
+  });
   document.querySelector("[data-undo-check]")?.addEventListener("click", () => {
     let restored = null;
     try {
@@ -629,6 +657,7 @@ async function boot() {
     renderHistory();
     renderSuggestions();
     refreshUndoButton();
+    refreshValidateButton();
   });
 }
 

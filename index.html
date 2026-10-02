@@ -39,6 +39,13 @@
 
       <!-- Secondary actions: copy / share / export + clear (export lane owns behavior) -->
       <div class="actions-bar" role="group" aria-label="Actions de la liste">
+        <button type="button" class="shopping-action" data-validate-list
+          aria-label="Valider la liste" title="Valider la liste" hidden>
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <path d="M10 18.5l6.5 7L26 12" class="icon-ink"/>
+            <path d="M28.5 6.5l2-2M31 9h2" class="icon-accent"/>
+          </svg>
+        </button>
         <button type="button" class="shopping-action shopping-action--danger" data-clear-checked
           aria-label="Retirer les articles cochés" title="Retirer les articles cochés">
           <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">

@@ -95,17 +95,19 @@ test("UX21: barre d'actions homogène, sémantique inchangée", () => {
   const bar = html.match(/<div class="actions-bar"[\s\S]*?<\/div>/);
   assert.ok(bar, "barre d'actions présente dans index.html");
   const buttons = [...bar[0].matchAll(/<button[^>]*>/g)].map((m) => m[0]);
-  assert.strictEqual(buttons.length, 5, "5 actions : clear, copy, share, export, undo");
+  // #9 ajoute la 6e action globale (validate) : le contrat d'homogénéité
+  // s'applique à elle comme aux 5 autres (boucles ci-dessous).
+  assert.strictEqual(buttons.length, 6, "6 actions : validate, clear, copy, share, export, undo");
   for (const btn of buttons) {
     assert.ok(btn.includes("shopping-action"), `chaque action porte .shopping-action : ${btn}`);
     assert.ok(/aria-label="[^"]+"/.test(btn), `chaque action garde son nom accessible : ${btn}`);
   }
-  for (const hook of ["data-clear-checked", "data-copy-shopping", "data-share-shopping", "data-export-shopping", "data-undo-check"]) {
+  for (const hook of ["data-validate-list", "data-clear-checked", "data-copy-shopping", "data-share-shopping", "data-export-shopping", "data-undo-check"]) {
     assert.ok(bar[0].includes(hook), `hook ${hook} conservé`);
   }
   assert.ok(bar[0].includes("disabled"), "l'état disabled d'undo est conservé");
   const svgs = [...bar[0].matchAll(/<svg[\s\S]*?<\/svg>/g)].map((m) => m[0]);
-  assert.strictEqual(svgs.length, 5, "5 icônes SVG inline, même langage");
+  assert.strictEqual(svgs.length, 6, "6 icônes SVG inline, même langage");
   for (const svg of svgs) {
     assert.ok(svg.includes('class="shopping-action-icon"'), "classe d'icône homogène");
     assert.ok(svg.includes('viewBox="0 0 36 36"'), "grille 36 commune");
