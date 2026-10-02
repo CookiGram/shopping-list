@@ -156,7 +156,18 @@ export function essentialChip(key, name, active = false) {
   return li;
 }
 
-/** Pin (essential) toggle — visual only; pressed state set by caller. */
+/** Pin (essential) toggle — visual only; pressed state set by caller.
+ * UX21 (#21): inline SVG pin in the CookiGram stroke language (2px ink
+ * strokes, round joins) instead of the system-emoji pushpin, so the essential
+ * state reads as one calm product-line indicator. Color follows the
+ * button (muted when off, orange when pressed); no legend needed.
+ */
+const PIN_SVG =
+  '<svg class="essential-pin-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path d="M12 2.8c-3.6 0-6.2 2.7-6.2 6.1 0 4.7 6.2 12.3 6.2 12.3s6.2-7.6 6.2-12.3c0-3.4-2.6-6.1-6.2-6.1z"' +
+  ' fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
+  '<circle cx="12" cy="8.9" r="2.2" fill="currentColor"/>' +
+  "</svg>";
 export function essentialButton(id, pressed = false) {
   const btn = el("button", "icon-btn", {
     type: "button",
@@ -165,7 +176,7 @@ export function essentialButton(id, pressed = false) {
     "aria-label": pressed ? "Retirer des essentiels" : "Marquer comme essentiel",
     title: pressed ? "Retirer des essentiels" : "Marquer comme essentiel",
   });
-  btn.textContent = "📌";
+  btn.innerHTML = PIN_SVG;
   return btn;
 }
 
@@ -182,15 +193,25 @@ export function heartButton(id, pressed = false) {
   return btn;
 }
 
-/** Broom (clear checked) button — visual only. */
+/** Broom (clear checked) button — visual only.
+ * UX21 (#21): same inline-SVG broom as the actions bar in index.html
+ * (36-grid stroke language shared with copy/share/export).
+ */
+const BROOM_SVG =
+  '<svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">' +
+  '<path d="M23 5L12 21" class="icon-ink"/>' +
+  '<path d="M7 20l8-2 4 8-8 2z" class="icon-paper"/>' +
+  '<path d="M9.5 22.5l4-1" class="icon-accent"/>' +
+  '<path d="M28.5 6.5l2-2M31 9h2" class="icon-accent"/>' +
+  "</svg>";
 export function broomButton() {
-  const btn = el("button", "icon-btn icon-btn--danger", {
+  const btn = el("button", "shopping-action shopping-action--danger", {
     type: "button",
     "data-clear-checked": "",
     "aria-label": "Retirer les articles cochés",
     title: "Retirer les articles cochés",
   });
-  btn.textContent = "🧹";
+  btn.innerHTML = BROOM_SVG;
   return btn;
 }
 

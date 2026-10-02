@@ -39,8 +39,15 @@
 
       <!-- Secondary actions: copy / share / export + clear (export lane owns behavior) -->
       <div class="actions-bar" role="group" aria-label="Actions de la liste">
-        <button type="button" class="icon-btn icon-btn--danger" data-clear-checked
-          aria-label="Retirer les articles cochés" title="Retirer les articles cochés">🧹</button>
+        <button type="button" class="shopping-action shopping-action--danger" data-clear-checked
+          aria-label="Retirer les articles cochés" title="Retirer les articles cochés">
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <path d="M23 5L12 21" class="icon-ink"/>
+            <path d="M7 20l8-2 4 8-8 2z" class="icon-paper"/>
+            <path d="M9.5 22.5l4-1" class="icon-accent"/>
+            <path d="M28.5 6.5l2-2M31 9h2" class="icon-accent"/>
+          </svg>
+        </button>
         <span class="actions-separator" aria-hidden="true"></span>
         <button type="button" class="shopping-action" data-copy-shopping
           aria-label="Copier la liste" title="Copier la liste">
@@ -73,8 +80,13 @@
             <path d="M12 26h12" class="icon-accent"/>
           </svg>
         </button>
-        <button type="button" class="shopping-action shopping-action--glyph" data-undo-check
-          aria-label="Annuler le dernier article barré" title="Annuler le dernier article barré" disabled>↶</button>
+        <button type="button" class="shopping-action" data-undo-check
+          aria-label="Annuler le dernier article barré" title="Annuler le dernier article barré" disabled>
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <path d="M30 18a12 12 0 1 1-12-12" class="icon-ink"/>
+            <path d="M24 18h6v-6" class="icon-ink"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Lane mount: pantry-staple quick-add chips (essentials lane owns content) -->
