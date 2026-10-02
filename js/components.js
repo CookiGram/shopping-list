@@ -240,28 +240,34 @@ export function suggestionRow(slug, name, sub = "", icon = "") {
   return li;
 }
 
-/** History row with a re-add button. */
+/** History shortcut: the product name itself is the re-add button.
+ * One autonomous chip per recent (no separate "+ Ajouter" CTA);
+ * hooks (data-history-item / data-history-readd) and the app.js
+ * wiring are unchanged, so the click still adds the item at once. */
 export function historyRow(id, name) {
   const li = el("li", null, { "data-history-item": id });
-  const label = el("span");
-  label.textContent = name;
-  const readd = el("button", "history-readd", {
+  const readd = el("button", "chip", {
     type: "button",
     "data-history-readd": id,
+    "aria-label": `Ajouter ${name}`,
   });
-  readd.textContent = "+ Ajouter";
-  li.append(label, readd);
+  readd.textContent = name;
+  li.appendChild(readd);
   return li;
 }
 
-/** Empty-list placeholder card. */
+/** Empty-list placeholder: illustration + one minimal line. */
 export function emptyState() {
   const div = el("div", "empty-state", { "data-empty-state": "" });
-  const p1 = el("p");
+  const img = el("img", "empty-state-illustration", {
+    src: "./assets/illustrations/empty-basket.svg",
+    alt: "Panier vide",
+  });
+  const p = el("p");
   const strong = el("strong");
   strong.textContent = "Votre liste est vide.";
-  p1.appendChild(strong);
-  div.appendChild(p1);
+  p.appendChild(strong);
+  div.append(img, p);
   return div;
 }
 
