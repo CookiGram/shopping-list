@@ -270,7 +270,7 @@ function renderEssentials() {
     const hint = document.createElement("p");
     hint.className = "essentials-hint";
     hint.setAttribute("data-essentials-hint", "");
-    hint.textContent = "📌 Marquez vos indispensables pour les retrouver à chaque nouvelle liste.";
+    hint.textContent = "Marquez vos indispensables pour les retrouver à chaque nouvelle liste.";
     section.appendChild(hint);
     return;
   }

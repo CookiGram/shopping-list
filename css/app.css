@@ -301,7 +301,7 @@ main {
 
 .list-section {
   display:grid;
-  gap:var(--space-3);
+  gap:var(--space-2);
 }
 
 .list-section-title {
@@ -331,20 +331,29 @@ main {
   margin:0;
 }
 
+/* UX21 (#21): compact single-line rows — 44px control height, no row
+ * padding, so the 44px touch targets sit edge to edge. */
 .shopping-item {
-  min-height:48px;
+  min-height:44px;
   border-bottom:1px solid #ded6c773;
 }
 
 .shopping-item:last-child { border-bottom:0; }
 
+/* Whole-row wash: checkbox, stepper, pin and heart read as one unit. */
+.shopping-item:hover,
+.shopping-item:focus-within {
+  background:var(--card);
+  border-radius:var(--radius-sm);
+}
+
 .shopping-item-row {
   display:grid;
-  grid-template-columns:24px 30px minmax(0,1fr) auto auto auto;
+  grid-template-columns:30px 28px minmax(0,1fr) auto auto auto;
   gap:var(--space-2);
   align-items:center;
-  min-height:48px;
-  padding:var(--space-1) 0;
+  min-height:44px;
+  padding:0;
 }
 
 /* #7 quantity stepper: compact but 44px touch targets. */
@@ -381,14 +390,17 @@ main {
   font-variant-numeric:tabular-nums;
 }
 
+/* UX21 (#21): stronger checkbox presence (22px → 26px) for the main
+ * in-store action; still above the 24px accessibility floor. */
 .shopping-item input[type="checkbox"] {
   appearance:none;
   -webkit-appearance:none;
-  width:22px;
-  height:22px;
+  width:26px;
+  height:26px;
   margin:0;
-  border:1.5px solid #27251f75;
-  border-radius:6px;
+  justify-self:center;
+  border:2px solid #27251f75;
+  border-radius:7px;
   background:transparent;
   display:grid;
   place-items:center;
@@ -403,7 +415,7 @@ main {
 .shopping-item input[type="checkbox"]:checked::after {
   content:"✓";
   color:#fff;
-  font-size:14px;
+  font-size:16px;
   font-weight:800;
   line-height:1;
 }
@@ -502,6 +514,14 @@ main {
 
 .icon-btn[aria-pressed="true"] { color:var(--orange); }
 
+/* UX21 (#21): inline-SVG essential pin (components.js essentialButton).
+ * Muted outline when off, orange when pressed — no legend needed. */
+.essential-pin-icon {
+  display:block;
+  width:24px;
+  height:24px;
+}
+
 .icon-btn--danger:hover {
   background:#fbe3d6;
   color:var(--accent-text);
@@ -536,9 +556,11 @@ main {
   box-shadow:0 0 0 3px #e96f3a33;
 }
 
-.shopping-action--glyph {
-  font-size:1.5rem;
-  line-height:1;
+/* UX21 (#21): the clear-checked action keeps its caution wash while
+ * sharing the unified .shopping-action proportions and icon language. */
+.shopping-action--danger:hover {
+  background:#fbe3d6;
+  box-shadow:0 0 0 3px #e96f3a33;
 }
 
 .shopping-action:disabled {
@@ -693,6 +715,14 @@ main {
   main { gap:16px; }
   .shopping-list { gap:16px; }
   .shopping-group h3 { font-size:1rem; }
-  .shopping-item-row { grid-template-columns:24px 28px minmax(0,1fr) auto auto auto; }
+  .shopping-item-row { grid-template-columns:30px 28px minmax(0,1fr) auto auto auto; }
   .shopping-action { width:46px; height:46px; }
+}
+
+/* UX21 (#21): on wide screens the trailing cluster (stepper, pin,
+ * heart) would otherwise float far from short product names. Cap the
+ * group column so actions stay attached to their row; mobile stays
+ * full-width. */
+@media (min-width:601px) {
+  .shopping-group { max-width:700px; }
 }
