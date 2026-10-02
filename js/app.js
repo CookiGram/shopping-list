@@ -548,7 +548,7 @@ function buildKeepText() {
 /** standard shape: grouped with 📍 Rayon headers (.txt export). */
 function buildStandardText() {
   const { groups } = groupItemsByAisle(toBuyItems(), catalog);
-  const lines = ["🛒 Courses"];
+  const lines = ["🛒 CookiList"];
   for (const [aisle, rows] of groups) {
     lines.push("", `📍 Rayon ${aisle} :`);
     for (const { item } of rows) lines.push(`☐ ${keepLine(item)}`);
@@ -674,7 +674,7 @@ function wireActions() {
     }
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "Courses", text });
+        await navigator.share({ title: "CookiList", text });
         return;
       } catch {
         /* Dismissed or failed: fall back to copy. */
@@ -692,7 +692,7 @@ function wireActions() {
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "courses.txt";
+    link.download = "cookilist.txt";
     document.body.appendChild(link);
     link.click();
     link.remove();
