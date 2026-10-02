@@ -44,6 +44,7 @@ import {
   activateTagFromSuggestion,
   activateTagFromList,
 } from "./tags.js";
+import { initAisleBar, aisleTerm } from "./aisle-filter.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
@@ -125,8 +126,15 @@ function renderSuggestions() {
   const query = els.search?.value ?? "";
   let rows = [];
   try {
+    // Suggestions narrow by active tags AND active aisle (issue #30);
+    // free text still applies on top. Essentials, recents, favorites
+    // and the list itself are untouched by the aisle filter.
+    const term = aisleTerm();
     rows = buildSuggestions(searchIndex, query, {
-      activeTags: getActiveTags(),
+      structuredTerms: [
+        ...getActiveTags().map((label) => ({ label, type: "tag" })),
+        ...(term ? [term] : []),
+      ],
       favorites: getFavorites(),
       staples: getEssentials(),
       history: topFrequent(30),
@@ -806,6 +814,17 @@ async function boot() {
   initTagBar({
     onChange: () => {
       listHandle?.setFilter(tagFilter());
+      renderSuggestions();
+    },
+  });
+
+  // Aisle chips (issue #30): suggestions only — unlike tags, the
+  // aisle filter never narrows the shopping list, and changing it
+  // preserves the typed text (renderSuggestions reads the input).
+  initAisleBar({
+    catalog,
+    index: searchIndex,
+    onChange: () => {
       renderSuggestions();
     },
   });

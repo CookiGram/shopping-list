@@ -365,6 +365,21 @@ main {
 .chip .chip-add { color:var(--accent-text); font-weight:700; }
 .chip[aria-pressed="true"] .chip-add { color:#fff; }
 
+/* Issue #30 : rangée de filtres catégorie. Réutilise .chip ; le
+ * modificateur --scroll garde une seule rangée en scroll horizontal
+ * au lieu de casser le layout (mobile-first). */
+.aisle-chips {
+  margin-top:var(--space-2);
+}
+.chip-row--scroll {
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  scrollbar-width:thin;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:var(--space-1);
+}
+.chip-row--scroll > li { flex:none; }
+
 /* Essentials ritual: per-chip "not this time" + global "ignore rest". */
 #essentials-chips li { display:inline-flex; align-items:center; gap:var(--space-1); }
 .chip-dismiss {

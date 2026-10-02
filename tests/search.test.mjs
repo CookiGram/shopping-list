@@ -405,3 +405,68 @@ test("issue #3: leading '#' prioritizes tags, items still listed", () => {
   assert.equal(rows.at(-1).kind, "free-add");
   assert.equal(rows.at(-1).label, "sel");
 });
+
+test("issue #30: aisle term narrows to the canonical aisle", () => {
+  const narrowed = searchIngredients(searchEntries(), "", {
+    structuredTerms: [{ label: "Fruits & légumes", type: "aisle" }],
+  });
+  assert.deepEqual(narrowed.map((r) => r.indexed.slug), ["ail"]);
+  const household = searchIngredients(searchEntries(), "", {
+    structuredTerms: [{ label: "Maison & entretien", type: "aisle" }],
+  });
+  assert.deepEqual(
+    household.map((r) => r.indexed.slug).sort(),
+    ["eponge", "lessive"],
+  );
+});
+
+test("issue #30: free text and aisle combine (both must match)", () => {
+  const rows = searchIngredients(searchEntries(), "ail", {
+    structuredTerms: [{ label: "Condiments & épices", type: "aisle" }],
+  });
+  assert.deepEqual(rows.map((r) => r.indexed.slug), ["ail-en-poudre"]);
+  const none = searchIngredients(searchEntries(), "farine", {
+    structuredTerms: [{ label: "Fruits & légumes", type: "aisle" }],
+  });
+  assert.deepEqual(none, []);
+});
+
+test("issue #30: aisle term and tag term combine without confusion", () => {
+  const rows = searchIngredients(searchEntries(), "", {
+    structuredTerms: [
+      { label: "Maison & entretien", type: "aisle" },
+      { label: "linge", type: "tag" },
+    ],
+  });
+  assert.deepEqual(rows.map((r) => r.indexed.slug), ["lessive"]);
+});
+
+test("issue #30: entries without aisle are excluded under an aisle filter", () => {
+  const entries = [
+    { kind: "culinary", entry: { slug: "x", name: "Xyz", aliases: ["xyz"], category: "C" } },
+  ];
+  const rows = searchIngredients(entries, "xyz", {
+    structuredTerms: [{ label: "Épicerie", type: "aisle" }],
+  });
+  assert.deepEqual(rows, []);
+  const unfiltered = searchIngredients(entries, "xyz");
+  assert.equal(unfiltered.length, 1);
+});
+
+test("issue #30: aisle is structured-only, never a free-text field", () => {
+  const indexed = indexSearchIngredient(searchEntries()[0]);
+  assert.equal(indexed.fields.aisle.text, "fruits & legumes");
+  // "maison" only appears in lessive/eponge aisles: no text match.
+  const rows = searchIngredients(searchEntries(), "maison");
+  assert.deepEqual(rows, []);
+});
+
+test("issue #30: suggestions keep free-add under an aisle filter", () => {
+  const rows = buildSuggestions(searchEntries(), "ail", {
+    structuredTerms: [{ label: "Fruits & légumes", type: "aisle" }],
+  });
+  const items = rows.filter((r) => r.kind === "item").map((r) => r.slug);
+  assert.deepEqual(items, ["ail"]);
+  assert.equal(rows.at(-1).kind, "free-add");
+  assert.equal(rows.at(-1).label, "ail");
+});

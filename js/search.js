@@ -143,6 +143,9 @@ export const indexSearchIngredient = (input, sourceIndex = 0) => {
     category: fieldEntry(entry.category ?? ""),
     // Structured-only (active tags); never a free-text field.
     tags: fieldEntry((entry.tags ?? []).join(" ")),
+    // Structured-only (aisle filter chips, issue #30); never a
+    // free-text field. Canonical CookiGram aisle per entry.
+    aisle: fieldEntry(entry.aisle ?? ""),
   });
   return Object.freeze({
     kind,
@@ -208,18 +211,22 @@ export const normalizeTerms = (terms = []) =>
 const structuredField = (term) =>
   term?.type === "tag"
     ? "tags"
-    : term?.type === "item" ||
-        term?.type === "ingredient" ||
-        term?.type === "ingrédient"
-      ? "name"
-      : null;
+    : term?.type === "aisle"
+      ? "aisle"
+      : term?.type === "item" ||
+          term?.type === "ingredient" ||
+          term?.type === "ingrédient"
+        ? "name"
+        : null;
 
 /**
  * Every free-text token must match some SEARCH_FIELD; every structured
  * term must phrase-match its pinned field. Tag terms pin to `tags`, so
  * an active tag narrows results to household entries carrying it
  * (culinary entries have no tags and are filtered out while a tag
- * is active — clear the tag to search them again).
+ * is active — clear the tag to search them again). Aisle terms
+ * (issue #30) pin to `aisle` and narrow to that canonical aisle;
+ * free text and aisle combine (both must match).
  */
 export const matchSearch = (indexed, query = "", structuredTerms = []) => {
   const index = indexed?.fields ? indexed : indexSearchIngredient(indexed);
