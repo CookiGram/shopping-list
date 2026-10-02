@@ -1,6 +1,6 @@
 /* Shopping List v0 — Store (Lane G).
- * localStorage persistence for the current list, favorites, staple-ritual
- * memory, history, prefs, and a frequency signal for ranking.
+ * localStorage persistence for the current list, favorites, essentials,
+ * history, prefs, and a frequency signal for ranking.
  * Vanilla ES module, no dependencies, no catalog imports: catalog concepts
  * only cross this boundary as plain {slug, name} data (see docs/store-api.md).
  *
@@ -13,7 +13,6 @@
 export const STORE_KEYS = Object.freeze({
   items: "shopping-list:items:v1",
   favorites: "shopping-list:favorites:v1",
-  staples: "shopping-list:staples:v1",
   essentials: "shopping-list:essentials:v1",
   history: "shopping-list:history:v1",
   prefs: "shopping-list:prefs:v1",
@@ -26,9 +25,6 @@ export const CHANGE_EVENT = "shopping-list:change";
 /** Allowed `item.provenance.source` values. */
 export const PROVENANCE_SOURCES = Object.freeze(["cookigram", "dict", "custom"]);
 
-/** Allowed staple-ritual decisions recorded by `noteStapleDecision`. */
-export const STAPLE_DECISIONS = Object.freeze(["added", "rejected", "ignored"]);
-
 /** Default prefs (see `getPrefs` / `setPrefs`). */
 export const DEFAULT_PREFS = Object.freeze({
   essentialsEnabled: true,
@@ -36,7 +32,6 @@ export const DEFAULT_PREFS = Object.freeze({
 });
 
 const MAX_FREQUENCY_KEYS = 300;
-const MAX_STAPLE_DECISIONS = 200;
 
 /* ------------------------------------------------------------------ */
 /* Storage layer                                                       */
@@ -540,58 +535,9 @@ export const clearEssentials = () => {
   return count;
 };
 
-/* ------------------------------------------------------------------ */
-/* Staple-ritual memory (decisions only — never a second list)          */
-/*                                                     {slug: {decision, at}} */
-/* ------------------------------------------------------------------ */
-
-const readStapleDecisions = () => {
-  const raw = readStoreKey(STORE_KEYS.staples, {});
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  return Object.fromEntries(
-    Object.entries(raw).filter(
-      ([, rec]) => rec && STAPLE_DECISIONS.includes(rec.decision),
-    ),
-  );
-};
-
-/**
- * Record one ritual decision so future rituals can skip recently
- * rejected staples (see staples.js `filterCandidates`). The ephemeral
- * ritual itself lives in memory only; this is just the memory.
- */
-export const noteStapleDecision = (slug, decision) => {
-  if (!slug) throw new Error("store.noteStapleDecision: slug is required");
-  if (!STAPLE_DECISIONS.includes(decision)) {
-    throw new Error(`store.noteStapleDecision: unknown decision ${JSON.stringify(decision)}`);
-  }
-  const all = readStapleDecisions();
-  all[String(slug)] = { decision, at: Date.now() };
-  const keys = Object.keys(all);
-  if (keys.length > MAX_STAPLE_DECISIONS) {
-    keys
-      .sort((a, b) => (all[a].at ?? 0) - (all[b].at ?? 0))
-      .slice(0, keys.length - MAX_STAPLE_DECISIONS)
-      .forEach((oldest) => {
-        delete all[oldest];
-      });
-  }
-  writeStoreKey(STORE_KEYS.staples, all);
-  emitStoreChange("staples:decision", { key: String(slug), decision });
-  return { ...all[String(slug)] };
-};
-
-/** Copy of all recorded staple decisions. */
-export const getStapleDecisions = () =>
-  Object.fromEntries(Object.entries(readStapleDecisions()).map(([k, v]) => [k, { ...v }]));
-
-/** Forget all staple decisions. Returns the number removed. */
-export const clearStapleDecisions = () => {
-  const count = Object.keys(readStapleDecisions()).length;
-  writeStoreKey(STORE_KEYS.staples, {});
-  emitStoreChange("staples:clear", { count });
-  return count;
-};
+/* Historical note: `shopping-list:staples:v1` (legacy per-slug ritual
+ * decisions) may still exist physically in user storage. It is no
+ * longer read or written; no destructive migration is performed. */
 
 /* ------------------------------------------------------------------ */
 /* Prefs                                                               */

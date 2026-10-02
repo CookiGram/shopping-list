@@ -1,4 +1,4 @@
-# Store API — favorites / staples / history / persistence (Lane G)
+# Store API — favorites / essentials / history / persistence (Lane G)
 
 Persistence and session layer for the Shopping List PWA. Vanilla ES
 modules, no dependencies, no backend. Concepts are decoupled from
@@ -10,7 +10,7 @@ knowledge crosses the boundary only as plain `{slug, name}` data
 
 | Path | Owner | Content |
 | ---- | ----- | ------- |
-| `js/store.js` | Lane G | List, favorites, staple memory, prefs, frequency, event bus |
+| `js/store.js` | Lane G | List, favorites, essentials, prefs, frequency, event bus |
 | `js/staples.js` | Lane G | Ephemeral "Essentials to check" ritual (pure, no storage) |
 | `js/history.js` | Lane G | Close-the-session snapshots ("Récents") |
 
@@ -24,7 +24,7 @@ suffixed keys). Values are JSON.
 | `shopping-list:items:v1` | Array of items (insertion order) |
 | `shopping-list:favorites:v1` | Array of `{key, slug\|null, name, addedAt}` |
 | `shopping-list:essentials:v1` | Array of `{key, slug\|null, name, addedAt}` (user-marked only, never seeded) |
-| `shopping-list:staples:v1` | Map `{slug: {decision, at}}` (decisions only; legacy ritual memory, preserved but no longer consulted) |
+| `shopping-list:staples:v1` | REMOVED (#15): historical per-slug decisions, may physically remain, never read (no migration) |
 | `shopping-list:history:v1` | Array of sessions, oldest first (capped at 20) |
 | `shopping-list:prefs:v1` | Prefs object over `DEFAULT_PREFS` |
 | `shopping-list:frequency:v1` | Map `{normalizedName: {name, slug, count, lastUsedAt}}` (capped at 300 keys) |
@@ -66,7 +66,7 @@ import {
   removeItem, clearChecked, clearAll, subscribe,
   getFrequency, topFrequent,
   favoriteKey, getFavorites, isFavorite, toggleFavorite, clearFavorites,
-  noteStapleDecision, getStapleDecisions, clearStapleDecisions,
+  essentialKey, getEssentials, isEssential, toggleEssential, clearEssentials,
   getPrefs, setPrefs, resetPrefs,
 } from "./store.js";
 ```
@@ -115,11 +115,8 @@ Essentials (pin toggles; proposed on every new trip):
 - Favorites and essentials are independent: marking one never
   touches the other, and no migration converts between them.
 
-Staple-ritual memory (see `staples.js` below):
-
-- `noteStapleDecision(slug, "added"|"rejected"|"ignored")`.
-- `getStapleDecisions()` → `{slug: {decision, at}}` copy.
-- `clearStapleDecisions()` → number removed.
+Historical keys (`shopping-list:staples:v1`, removed with #15) are
+never read; no destructive migration is performed.
 
 Prefs:
 
@@ -146,8 +143,6 @@ Prefs:
 | `favorites:clear` | `{count}` |
 | `essentials:toggle` | `{key, essential}` |
 | `essentials:clear` | `{count}` |
-| `staples:decision` | `{key, decision}` |
-| `staples:clear` | `{count}` |
 | `history:close` | `{id, count}` |
 | `history:clear` | `{count}` |
 | `prefs:change` | — |
@@ -194,8 +189,8 @@ so every kept essential is proposed again on the next trip.
 Ignoring or rejecting a proposal never removes the essential.
 Candidates are matched by stable key (slug, or `name:<normalized>`
 for custom products), so custom essentials are proposed exactly
-like catalog ones. Legacy `noteStapleDecision()` memory is preserved
-in storage but no longer consulted by the essentials ritual.
+like catalog ones. The legacy `noteStapleDecision()` memory was removed
+with #15; historical `shopping-list:staples:v1` payloads are ignored.
 
 ```js
 import { createRitual, userEssentialCandidates } from "./staples.js";
@@ -204,23 +199,22 @@ const ritual = createRitual(userEssentialCandidates(getEssentials(), {
   onListKeys: getItems().map((i) => i.slug ?? essentialKey({ name: i.name })),
   decidedKeys: [...tripDecided], // memory-only trip verdicts
 }));
-ritual.pending();        // [{slug, name}] still undecided
+ritual.pending();        // [{key, slug, name}] still undecided
 ritual.validate("farine"); // → candidate (caller: addItem it)
 ritual.reject("kirsch");   // → true
 ritual.ignoreRest();       // → remaining; ends the ritual
-ritual.decisions();        // [{slug, name, decision}] incl. ignored
+ritual.decisions();        // [{key, slug, name, decision}] incl. ignored
 ritual.isDone();           // true when nothing is pending
 ```
 
-- `createRitual(candidates)` dedupes by slug and drops empties;
-  `validate`/`reject` on an unknown, already-decided, or
-  post-`ignoreRest` slug return null/false. Pure: no imports,
-  no storage, no DOM.
-- `filterCandidates(candidates, {onListSlugs?,
-  recentDecisions?, cooldownMs? = 7 days, now?})` drops slugs
-  already on the list and slugs rejected within the cooldown
-  (`added`/`ignored` past decisions do NOT suppress a
-  re-proposal).
+- `createRitual(candidates)` dedupes by stable key and drops
+  unkeyable entries; `validate`/`reject` on an unknown,
+  already-decided, or post-`ignoreRest` key return null/false.
+  Pure: no imports, no storage, no DOM.
+- `userEssentialCandidates(essentials, {onListKeys?,
+  decidedKeys?})` drops key duplicates, entries already on the
+  list, and entries decided in the current trip. Trip-scoped:
+  no cooldown, no persisted memory.
 
 ## Relationship to `cookigram-contract.md` §9.2
 
@@ -239,7 +233,7 @@ contract update needed. Deliberate additive deviations:
 3. Favorites detail uses `{key}` rather than `{id}` (favorites
    are keyed by slug/name, not by item id).
 4. sibling Lane-G concepts required by the brief (favorites,
-   staple memory, history, prefs, frequency) are new exported
+   essentials, history, prefs, frequency) are new exported
    functions, not renames.
 5. Fail-soft storage (corrupt-JSON reset, in-memory fallback)
    and `configureStore` are robustness additions with no

@@ -7,7 +7,6 @@ import {
   STORE_KEYS,
   CHANGE_EVENT,
   PROVENANCE_SOURCES,
-  STAPLE_DECISIONS,
   DEFAULT_PREFS,
   configureStore,
   readStoreKey,
@@ -34,9 +33,6 @@ import {
   isFavorite,
   toggleFavorite,
   clearFavorites,
-  noteStapleDecision,
-  getStapleDecisions,
-  clearStapleDecisions,
   getPrefs,
   setPrefs,
   resetPrefs,
@@ -48,10 +44,9 @@ beforeEach(() => {
 });
 
 test("constants contract", () => {
-  assert.deepEqual(Object.keys(STORE_KEYS).sort(), ["essentials", "favorites", "frequency", "history", "items", "prefs", "staples"]);
+  assert.deepEqual(Object.keys(STORE_KEYS).sort(), ["essentials", "favorites", "frequency", "history", "items", "prefs"]);
   assert.equal(CHANGE_EVENT, "shopping-list:change");
   assert.deepEqual([...PROVENANCE_SOURCES], ["cookigram", "dict", "custom"]);
-  assert.deepEqual([...STAPLE_DECISIONS], ["added", "rejected", "ignored"]);
   assert.deepEqual({ ...DEFAULT_PREFS }, { essentialsEnabled: true, lastRitualAt: null });
 });
 
@@ -195,21 +190,6 @@ test("favorites: key, toggle, is, clear", () => {
   const favs = getFavorites();
   favs[0].name = "MUT";
   assert.equal(getFavorites()[0].name, "X");
-});
-
-test("staple decisions: note/get/clear + validation", () => {
-  assert.throws(() => noteStapleDecision("", "added"), /slug is required/);
-  assert.throws(() => noteStapleDecision("a", "nope"), /unknown decision/);
-  noteStapleDecision("farine", "added");
-  noteStapleDecision("kirsch", "rejected");
-  const all = getStapleDecisions();
-  assert.equal(all.farine.decision, "added");
-  assert.equal(all.kirsch.decision, "rejected");
-  // Copies.
-  all.farine.decision = "MUT";
-  assert.equal(getStapleDecisions().farine.decision, "added");
-  assert.equal(clearStapleDecisions(), 2);
-  assert.deepEqual(getStapleDecisions(), {});
 });
 
 test("prefs: defaults, merge, reset, extra keys kept", () => {

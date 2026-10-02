@@ -1,12 +1,12 @@
-/* Shopping List v0 — Staples ritual (Lane G).
- * Ephemeral "Essentials to check" ritual: the app proposes pantry staples
- * (resolved by the app lane from catalog `staple: true` flags) and the user
- * validates / rejects each one, or ignores the rest.
+/* Shopping List v0 — Essentials ritual (Lane G).
+ * Ephemeral "Essentials to check" ritual: the app proposes the user's
+ * own essentials (see `userEssentialCandidates`) and the user validates
+ * / rejects each one, or ignores the rest.
  *
  * Pure module: no imports, no storage, no DOM. This ritual is NEVER a
- * second permanent list — state lives in memory only, and the caller
- * persists just the per-slug decisions via
- * `store.noteStapleDecision()` when it wants a memory across sessions.
+ * second permanent list — state lives in memory only, trip-scoped: no
+ * verdict is persisted, so every kept essential is proposed again on
+ * the next trip.
  *
  * Candidate shape (plain data, decoupled from catalog internals):
  *   {key: "farine", slug: "farine", name: "Farine"}
@@ -141,38 +141,7 @@ export const userEssentialCandidates = (
   return out;
 };
 
-/**
- * Pre-filter ritual candidates (pure):
- * - drop slugs already on the current list (`onListSlugs`),
- * - drop slugs rejected within `cooldownMs` (`recentDecisions` has the
- *   `store.getStapleDecisions()` shape `{slug: {decision, at}}`),
- * - drop empties / duplicates.
- *
- * `now` is injectable for tests. Returns clean [{slug, name}] copies.
- */
-export const filterCandidates = (
-  candidates = [],
-  { onListSlugs = [], recentDecisions = {}, cooldownMs = 7 * 24 * 3600 * 1000, now = Date.now() } = {},
-) => {
-  const onList = new Set(onListSlugs.map((slug) => String(slug)));
-  const out = [];
-  const seen = new Set();
-  for (const raw of candidates) {
-    const candidate = cleanCandidate(raw);
-    // Legacy path: slug-required (slugless entries are dropped, as before).
-    if (!candidate || !candidate.slug) continue;
-    if (seen.has(candidate.slug) || onList.has(candidate.slug)) continue;
-    const record = recentDecisions[candidate.slug];
-    if (
-      record
-      && record.decision === "rejected"
-      && typeof record.at === "number"
-      && now - record.at < cooldownMs
-    ) {
-      continue;
-    }
-    seen.add(candidate.slug);
-    out.push(candidate);
-  }
-  return out;
-};
+/* Historical note: the legacy `filterCandidates()` (on-list + 7-day
+ * rejected cooldown over persisted `noteStapleDecision()` memory) was
+ * removed with issue #15. Candidate filtering now lives in
+ * `userEssentialCandidates()` (key-based, trip-scoped, no cooldown). */

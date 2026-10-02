@@ -3,7 +3,7 @@
  */
 import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { createRitual, filterCandidates, STAPLE_RITUAL_DECISIONS } from "../js/staples.js";
+import { createRitual, STAPLE_RITUAL_DECISIONS } from "../js/staples.js";
 import {
   TAGS_CHANGE_EVENT,
   getActiveTags,
@@ -118,39 +118,6 @@ test("createRitual: decisions()/isDone() consult the stable key (custom + catalo
     { key: "farine", slug: "farine", name: "Farine", decision: "added" },
   ]);
   assert.equal(catalog.isDone(), true);
-});
-
-test("filterCandidates: onList + rejected-cooldown suppressed; added/ignored re-proposed", () => {
-  const now = 1_700_000_000_000;
-  const day = 24 * 3600 * 1000;
-  const candidates = [
-    { slug: "on-list", name: "On list" },
-    { slug: "fresh-reject", name: "Fresh" },
-    { slug: "old-reject", name: "Old" },
-    { slug: "added-before", name: "Added" },
-    { slug: "ignored-before", name: "Ignored" },
-    { slug: "new", name: "New" },
-    { slug: "new", name: "New dup" },
-    { slug: "", name: "Blank" },
-  ];
-  const out = filterCandidates(candidates, {
-    onListSlugs: ["on-list"],
-    recentDecisions: {
-      "fresh-reject": { decision: "rejected", at: now - day },
-      "old-reject": { decision: "rejected", at: now - 8 * day },
-      "added-before": { decision: "added", at: now - day },
-      "ignored-before": { decision: "ignored", at: now - day },
-    },
-    now,
-  });
-  assert.deepEqual(out.map((c) => c.slug), ["old-reject", "added-before", "ignored-before", "new"]);
-  // Custom cooldown respected.
-  const strict = filterCandidates([{ slug: "x", name: "X" }], {
-    recentDecisions: { x: { decision: "rejected", at: now - 10 } },
-    cooldownMs: 5,
-    now,
-  });
-  assert.equal(strict.length, 1);
 });
 
 test("tags: single activation path (suggestion === list === base)", () => {

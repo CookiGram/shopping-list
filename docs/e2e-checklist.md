@@ -7,7 +7,7 @@ every DOM / PWA / persistence-across-reload / viewport step stays manual.
 ## Run
 
 ```bash
-node --test tests/*.test.mjs   # Lane H: 71 tests, pure logic (search/store/catalog/staples/tags/history/list-grouping)
+node --test tests/*.test.mjs   # 111 tests, pure logic (search/store/catalog/ritual/tags/history/list-grouping/essentials/dictionary)
 python3 -m unittest discover -s tests/sync   # Lane D (sync lane owns it; listed for completeness)
 for f in js/*.js sw.js; do node --check "$f"; done   # syntax smoke gate (covers DOM-only modules)
 ```
@@ -31,9 +31,9 @@ holds shared fixtures (memory storage, minimal catalog, search entries).
 | # | Step (reference flow) | Status | What the unit test pins | What stays manual |
 |---|---|---|---|---|
 | 1 | Open app (fresh profile): empty state, catalog version row | M | — | `index.html` mount, `boot()` catalog load, empty-state card, version string; needs browser |
-| 2 | Essentials visible: staple chips proposed | P | `filterCandidates` on-list/cooldown/dedup (`staples-tags-history.test.mjs`); shipped snapshot holds 23 `staple:true` (`catalog.test.mjs`) | chip render, section hide when empty/prefs-off |
+| 2 | Essentials visible: user-essential chips proposed | P | `userEssentialCandidates` on-list/decided/dedup by stable key (`essentials.test.mjs`); catalog `staple:true` flags ignored (`search.test.mjs`, `essentials.test.mjs` 11/11) | chip render, hint at 0 essentials, section hide when empty/prefs-off |
 | 3 | Accept essential: tap `+` chip → item added, toast, chip gone | P | `createRitual.validate` + `store.addItem` merge/provenance (`staples-tags-history`, `store.test.mjs`) | click wiring, toast, re-render |
-| 4 | Reject essential | P | `ritual.reject` + `noteStapleDecision("rejected")` logic verified; per-chip ✕ wired in `app.js` | click ✕, chip disappears, section re-renders |
+| 4 | Reject essential | P | `ritual.reject` trip-scoped, status preserved (`essentials.test.mjs` 8/11); per-chip ✕ wired in `app.js` | click ✕, chip disappears, section re-renders |
 | 5 | Ignore rest: end ritual, section hides | P | `ritual.ignoreRest/decisions/isDone` verified; "Ignorer le reste" button wired in `app.js` | click, section hides, re-proposed after session close |
 | 6 | Autocomplete: type `ail` → listbox, max 8 rows, keyboard navigable | P | `buildSuggestions` cap/order/tags-first/free-add-always (`search.test.mjs`) | listbox DOM, `aria-expanded/activedescendant`, ArrowUp/Down/Enter/Escape |
 | 7 | Add: pick suggestion → row appears grouped by aisle, toast, search cleared | P | `addItem` + `groupItemsByAisle` order/sort (`store`, `list-grouping.test.mjs`) | row render, toast, input clear + focus |
@@ -48,8 +48,8 @@ holds shared fixtures (memory storage, minimal catalog, search entries).
 | 16 | Close: finishing snapshots a history session | P | `closeSession` shape/caps/null-on-empty (`staples-tags-history.test.mjs`) | `clearChecked → closeSession` call-site wiring |
 | 17 | History: `Récents` shows deduped newest-first rows | P | `getHistory/recentItems` order/dedup/limit (`staples-tags-history.test.mjs`) | section render, hide when empty |
 | 18 | Re-add from history: `+ Ajouter` restores item, original provenance | P | `addItem` merge + provenance preservation rules (`store.test.mjs`) | re-add button wiring, `findEntry` kind → source mapping |
-| 19 | New list: start over (clear list/history) | P | `clearAll/clearHistory/clearFavorites/clearStapleDecisions` (`store`, `staples-tags-history.test.mjs`) | user flow (no dedicated "new list" button in v0 shell) |
-| 20 | Staples again: next ritual skips on-list + 7-day rejected | H | `filterCandidates` cooldown with injected `now`; added/ignored re-proposed (`staples-tags-history.test.mjs`) | — (spot-check chips) |
+| 19 | New list: start over (clear list/history) | P | `clearAll/clearHistory/clearFavorites/clearEssentials` (`store.test.mjs`) | user flow (no dedicated "new list" button in v0 shell) |
+| 20 | Essentials again: next trip re-proposes every kept essential | H | trip-scoped ritual, no cooldown, no persisted verdicts (`essentials.test.mjs` 9-10/11) | — (spot-check chips) |
 | 21 | Offline: airplane mode + reload → list + catalog work | M | — | service worker precache (`sw.js`, `CACHE` name), offline fallback; cannot run headless |
 | 22 | Reload persistence: items/favorites/decisions/history survive | M | store fail-soft (corrupt JSON, memory fallback) and backend injection logic only | real `localStorage` across page loads + cross-tab `storage` event; cannot run headless |
 | 23 | Viewport + a11y: 360px layout, 44px targets, live regions, focus rings | M | — | visual check (mobile frame, touch rows), `aria-live`, `aria-checked mixed`, `:focus-visible`; cannot run headless |
