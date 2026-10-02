@@ -261,9 +261,7 @@ export function emptyState() {
   const strong = el("strong");
   strong.textContent = "Votre liste est vide.";
   p1.appendChild(strong);
-  const p2 = el("p");
-  p2.textContent = "Recherchez un ingrédient ci-dessus ou touchez un essentiel pour commencer.";
-  div.append(p1, p2);
+  div.appendChild(p1);
   return div;
 }
 

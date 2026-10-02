@@ -255,7 +255,6 @@ function renderEssentials() {
   const chips = els.essentialsChips;
   if (!section || !chips) return;
   section.querySelector("[data-ignore-rest]")?.remove();
-  section.querySelector("[data-essentials-hint]")?.remove();
   let enabled = true;
   let essentialCount = 0;
   try {
@@ -265,13 +264,11 @@ function renderEssentials() {
     enabled = true;
   }
   chips.replaceChildren();
-  if (enabled && essentialCount === 0) {
-    section.hidden = false;
-    const hint = document.createElement("p");
-    hint.className = "essentials-hint";
-    hint.setAttribute("data-essentials-hint", "");
-    hint.textContent = "Marquez vos indispensables pour les retrouver à chaque nouvelle liste.";
-    section.appendChild(hint);
+  if (essentialCount === 0) {
+    // Binary essential state: no explanatory hint — the pin color on
+    // each row carries the state. The section stays hidden until a
+    // candidate chip is worth proposing (no artificial empty space).
+    section.hidden = true;
     return;
   }
   ritual = createRitual(essentialCandidates());
