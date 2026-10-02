@@ -30,6 +30,7 @@ const PRECACHE = [
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./assets/illustrations/empty-basket.svg",
 ];
 
 self.addEventListener("install", (event) => {
