@@ -271,7 +271,40 @@ const SECTION_TITLES = Object.freeze({
   checked: "Plus nécessaire",
 });
 
-function sectionElement(kind, groups, { iconBase, isFavorite, isEssential }) {
+/**
+ * UX13 (#13): state-section titles ("Encore à prendre" / "Plus nécessaire")
+ * render only when both states are present to tell apart. A lone state
+ * renders bare aisle groups, so the visible hierarchy stays app identity
+ * → aisles → items. Pure (unit-tested); renderList is the caller.
+ */
+export function showsStateTitles(activeCount, checkedCount) {
+  return activeCount > 0 && checkedCount > 0;
+}
+
+function aisleCards(groups, { iconBase, isFavorite, isEssential }) {
+  return groups.map(([aisle, rows]) =>
+    aisleCard(
+      aisle,
+      rows.map(({ item, meta }) => {
+        let favorite = null;
+        try {
+          favorite = !!isFavorite(item);
+        } catch {
+          favorite = !!item.favorite;
+        }
+        let essential = null;
+        try {
+          essential = !!isEssential(item);
+        } catch {
+          essential = !!item.essential;
+        }
+        return itemRow(item, meta, { iconBase, favorite, essential });
+      }),
+    ),
+  );
+}
+
+function sectionElement(kind, groups, rowOptions) {
   const section = document.createElement("section");
   section.className = `list-section list-section--${kind}`;
   section.setAttribute("data-list-section", kind);
@@ -279,36 +312,26 @@ function sectionElement(kind, groups, { iconBase, isFavorite, isEssential }) {
   title.className = "list-section-title";
   title.textContent = SECTION_TITLES[kind] ?? kind;
   section.appendChild(title);
-  for (const [aisle, rows] of groups) {
-    section.appendChild(
-      aisleCard(
-        aisle,
-        rows.map(({ item, meta }) => {
-          let favorite = null;
-          try {
-            favorite = !!isFavorite(item);
-          } catch {
-            favorite = !!item.favorite;
-          }
-          let essential = null;
-          try {
-            essential = !!isEssential(item);
-          } catch {
-            essential = !!item.essential;
-          }
-          return itemRow(item, meta, { iconBase, favorite, essential });
-        }),
-      ),
-    );
-  }
+  for (const card of aisleCards(groups, rowOptions)) section.appendChild(card);
   return section;
+}
+
+function appendStateSection(container, kind, groups, rowOptions, titled) {
+  if (!groups.length) return;
+  if (!titled) {
+    for (const card of aisleCards(groups, rowOptions)) container.appendChild(card);
+    return;
+  }
+  container.appendChild(sectionElement(kind, groups, rowOptions));
 }
 
 /**
  * Render items into container (cleared first). Returns {rendered, total}.
- * Items render in two semantic sections — active ("Encore à prendre")
+ * Items split in two semantic sections — active ("Encore à prendre")
  * always before checked ("Plus nécessaire"); each section only renders
- * when non-empty and is never collapsible.
+ * when non-empty and is never collapsible. The section titles only render
+ * when both states are present (UX13); a lone state renders bare aisle
+ * groups with no redundant title.
  * Options: {filter, query(for the filtered-empty message), iconBase,
  *           isFavorite: (item) => bool (default: item.favorite),
  *           isEssential: (item) => bool (default: item.essential),
@@ -332,12 +355,9 @@ export function renderList(container, items, catalog, options = {}) {
     container.appendChild(list.length ? filteredEmptyState(query) : emptyState());
   } else {
     const rowOptions = { iconBase, isFavorite, isEssential };
-    if (activeGroups.length) {
-      container.appendChild(sectionElement("active", activeGroups, rowOptions));
-    }
-    if (checkedGroups.length) {
-      container.appendChild(sectionElement("checked", checkedGroups, rowOptions));
-    }
+    const titled = showsStateTitles(activeGroups.length, checkedGroups.length);
+    appendStateSection(container, "active", activeGroups, rowOptions, titled);
+    appendStateSection(container, "checked", checkedGroups, rowOptions, titled);
   }
   updateCount(count, list);
   activateTags(container);
