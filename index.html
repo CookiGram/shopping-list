@@ -30,11 +30,25 @@
             placeholder="Ajouter un ingrédient… (ex. ail, beurre)"
             aria-label="Rechercher et ajouter un ingrédient" autocomplete="off"
             role="combobox" aria-expanded="false" aria-controls="shopping-suggestions">
+          <button type="button" class="voice-trigger" id="shopping-voice"
+            aria-label="Dicter des articles" title="Dicter des articles" hidden>
+            <span aria-hidden="true">🎙️</span>
+          </button>
           <button type="button" class="search-clear" id="shopping-clear"
             aria-label="Effacer la recherche" hidden>×</button>
         </div>
         <ul id="shopping-suggestions" class="search-suggestions"
           role="listbox" aria-label="Suggestions d'ingrédients" hidden></ul>
+
+        <div class="voice-review" id="voice-review" aria-live="polite" hidden>
+          <div class="voice-review-head">
+            <strong>J'ai compris :</strong>
+            <button type="button" class="voice-cancel" id="voice-cancel">Annuler</button>
+          </div>
+          <p class="voice-transcript" id="voice-transcript"></p>
+          <div class="voice-chips" id="voice-chips"></div>
+          <button type="button" class="voice-confirm" id="voice-confirm">Ajouter tout</button>
+        </div>
       </section>
 
       <!-- Secondary actions: copy / share / export + clear (export lane owns behavior) -->
