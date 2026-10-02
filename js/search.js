@@ -425,11 +425,12 @@ const computeBoosts = (index, context = {}) => {
   const favorite = keys.some((key) => toKeySet(context.favorites).has(key))
     ? BOOST_FAVORITE
     : 0;
-  const staple =
-    index.entry?.staple === true ||
-    keys.some((key) => toKeySet(context.staples).has(key))
-      ? BOOST_STAPLE
-      : 0;
+  // Essentials are user-owned: the catalog `staple` flag is deliberately
+  // ignored here. Only caller-provided user essentials (context.staples,
+  // e.g. store.getEssentials()) boost ranking.
+  const staple = keys.some((key) => toKeySet(context.staples).has(key))
+    ? BOOST_STAPLE
+    : 0;
   const history = historyBoost(keys, context.history);
   const onList = keys.some((key) => toKeySet(context.onList).has(key));
   return {
@@ -513,7 +514,7 @@ export const sortSearchResults = (results = []) => [...results].sort(compareSear
  * ({kind, entry} or bare). Options:
  *   structuredTerms | activeTags (strings or {label, type}),
  *   favorites (getFavorites() array, keys, or Set),
- *   staples (getStapleDecisions() map, slugs, or Set),
+ *   staples (user essentials: getEssentials() array, slugs, or Set),
  *   history (recentItems()/getHistory()/topFrequent() output, Map, or array),
  *   onList (getItems() array, slugs/names, or Set),
  *   limit (default Infinity — callers slice).

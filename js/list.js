@@ -1,5 +1,5 @@
 /* Shopping List v0 — list UI (Lane F).
- * Renders store items grouped by aisle: [checkbox] [icon] [name + qty + tags] [heart].
+ * Renders store items grouped by aisle: [checkbox] [icon] [name + qty + tags] [heart] [pin].
  * Pure DOM + grouping; no search ranking, no storage writes of its own.
  *
  * Consumed contracts (parallel lanes; all optional at runtime):
@@ -216,7 +216,7 @@ function tagButton(tag, itemId) {
 }
 
 /** Build one shopping row; tags render inside the copy block (grid-safe). */
-export function itemRow(item, meta, { iconBase = DEFAULT_ICON_BASE, favorite = null } = {}) {
+export function itemRow(item, meta, { iconBase = DEFAULT_ICON_BASE, favorite = null, essential = null } = {}) {
   const li = checkboxRow({
     id: item.id,
     name: item.name ?? "",
@@ -224,6 +224,7 @@ export function itemRow(item, meta, { iconBase = DEFAULT_ICON_BASE, favorite = n
     icon: iconPathFor(meta?.icon, iconBase),
     checked: !!item.checked,
     favorite: favorite ?? !!item.favorite,
+    essential,
   });
   if (meta?.tags?.length) {
     const copy = li.querySelector(".shopping-item-copy");
@@ -270,7 +271,7 @@ const SECTION_TITLES = Object.freeze({
   checked: "Plus nécessaire",
 });
 
-function sectionElement(kind, groups, { iconBase, isFavorite }) {
+function sectionElement(kind, groups, { iconBase, isFavorite, isEssential }) {
   const section = document.createElement("section");
   section.className = `list-section list-section--${kind}`;
   section.setAttribute("data-list-section", kind);
@@ -289,7 +290,13 @@ function sectionElement(kind, groups, { iconBase, isFavorite }) {
           } catch {
             favorite = !!item.favorite;
           }
-          return itemRow(item, meta, { iconBase, favorite });
+          let essential = null;
+          try {
+            essential = !!isEssential(item);
+          } catch {
+            essential = !!item.essential;
+          }
+          return itemRow(item, meta, { iconBase, favorite, essential });
         }),
       ),
     );
@@ -304,6 +311,7 @@ function sectionElement(kind, groups, { iconBase, isFavorite }) {
  * when non-empty and is never collapsible.
  * Options: {filter, query(for the filtered-empty message), iconBase,
  *           isFavorite: (item) => bool (default: item.favorite),
+ *           isEssential: (item) => bool (default: item.essential),
  *           count: true|false|Element|selector (default true → "#count")}.
  */
 export function renderList(container, items, catalog, options = {}) {
@@ -312,6 +320,7 @@ export function renderList(container, items, catalog, options = {}) {
     query = typeof filter === "string" ? filter : "",
     iconBase = DEFAULT_ICON_BASE,
     isFavorite = (item) => !!item?.favorite,
+    isEssential = (item) => !!item?.essential,
     count = true,
   } = options;
   const list = items ?? [];
@@ -322,7 +331,7 @@ export function renderList(container, items, catalog, options = {}) {
   if (!activeGroups.length && !checkedGroups.length) {
     container.appendChild(list.length ? filteredEmptyState(query) : emptyState());
   } else {
-    const rowOptions = { iconBase, isFavorite };
+    const rowOptions = { iconBase, isFavorite, isEssential };
     if (activeGroups.length) {
       container.appendChild(sectionElement("active", activeGroups, rowOptions));
     }
@@ -393,6 +402,26 @@ async function toggleFavorite(id, btn, explicitStore, onToggleFavorite, lookupIt
   emitAction({ type: "favorite", id, favorite: next });
 }
 
+async function toggleEssential(id, btn, explicitStore, onToggleEssential, lookupItem) {
+  const pressed = btn.getAttribute("aria-pressed") === "true";
+  if (typeof onToggleEssential === "function") return onToggleEssential(id, !pressed, btn);
+  const store = await resolveStore(explicitStore);
+  if (typeof store?.toggleEssential === "function") {
+    try {
+      const item = lookupItem?.(id) ?? store.getItem?.(id) ?? null;
+      await store.toggleEssential({ slug: item?.slug ?? null, name: item?.name ?? "" });
+      return;
+    } catch {
+      /* fall through to optimistic update */
+    }
+  }
+  const next = !pressed;
+  btn.setAttribute("aria-pressed", String(next));
+  btn.setAttribute("aria-label", next ? "Retirer des essentiels" : "Marquer comme essentiel");
+  btn.setAttribute("title", next ? "Retirer des essentiels" : "Marquer comme essentiel");
+  emitAction({ type: "essential", id, essential: next });
+}
+
 function activateTag(tag, id, btn, onTag) {
   if (typeof onTag === "function") return onTag(tag, id, btn);
   const event = new CustomEvent(TAG_EVENT, {
@@ -409,7 +438,7 @@ function activateTag(tag, id, btn, onTag) {
 /**
  * Mount a live list: initial render + store subscription + delegated events.
  * Options: {catalog, store, getItems, filter|getFilter, iconBase, count,
- *           onToggleCheck, onToggleFavorite, onTag}.
+ *           onToggleCheck, onToggleFavorite, onToggleEssential, onTag}.
  * Returns {unmount, refresh, setFilter, getCatalog}.
  */
 export function mountList(container, options = {}) {
@@ -421,6 +450,7 @@ export function mountList(container, options = {}) {
     count = true,
     onToggleCheck = null,
     onToggleFavorite = null,
+    onToggleEssential = null,
     onTag = null,
   } = options;
   let filter = options.filter ?? options.getFilter?.() ?? null;
@@ -444,6 +474,17 @@ export function mountList(container, options = {}) {
     }
     return !!item?.favorite;
   };
+  const isEssentialFor = (item) => {
+    const fn = cachedStore?.isEssential;
+    if (typeof fn === "function") {
+      try {
+        return !!fn.call(cachedStore, { slug: item?.slug ?? null, name: item?.name ?? "" });
+      } catch {
+        return !!item?.essential;
+      }
+    }
+    return !!item?.essential;
+  };
   const lookupItem = (id) =>
     lastItems.find((item) => item?.id === id) ?? cachedStore?.getItem?.(id) ?? null;
   const refresh = async () => {
@@ -462,6 +503,7 @@ export function mountList(container, options = {}) {
       iconBase,
       count,
       isFavorite: isFavoriteFor,
+      isEssential: isEssentialFor,
     });
   };
 
@@ -480,6 +522,11 @@ export function mountList(container, options = {}) {
     const fav = event.target?.closest?.("[data-fav]");
     if (fav && container.contains(fav)) {
       toggleFavorite(fav.getAttribute("data-fav"), fav, cachedStore ?? explicitStore, onToggleFavorite, lookupItem);
+      return;
+    }
+    const pin = event.target?.closest?.("[data-essential-toggle]");
+    if (pin && container.contains(pin)) {
+      toggleEssential(pin.getAttribute("data-essential-toggle"), pin, cachedStore ?? explicitStore, onToggleEssential, lookupItem);
       return;
     }
     const tag = event.target?.closest?.("[data-tag]");

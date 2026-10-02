@@ -156,7 +156,8 @@ Le prototype doit rester simple jusqu'à validation de ces mécanismes.
 
 PWA mono-page autonome, sans compte ni backend : recherche/autocomplétion
 locale avec tags contextuels, rituel des essentiels
-(valider/rejeter/ignorer le reste), favoris, staples, historique,
+(valider/rejeter/ignorer le reste), essentiels définis par
+l'utilisateur (jamais imposés par le catalogue), favoris, historique,
 persistance `localStorage`, catalogue culinaire CookiGram versionné +
 pack d'icônes embarqués, sync catalogue nightly via CI (PR, sans
 auto-merge). Aucune dépendance runtime vers CookiGram ou Home ;

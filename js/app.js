@@ -28,8 +28,10 @@ import {
   getFavorites,
   topFrequent,
   getPrefs,
-  getStapleDecisions,
-  noteStapleDecision,
+  getEssentials,
+  isEssential,
+  toggleEssential,
+  essentialKey,
   canUndoCheck,
   undoLastCheck,
 } from "./store.js";
@@ -41,9 +43,10 @@ import {
   activateTagFromList,
 } from "./tags.js";
 import { closeSession, recentItems } from "./history.js";
-import { createRitual, filterCandidates } from "./staples.js";
+import { createRitual, userEssentialCandidates } from "./staples.js";
 import {
   essentialChip,
+  essentialButton,
   suggestionRow,
   historyRow,
   showToast,
@@ -114,6 +117,7 @@ function renderSuggestions() {
     rows = buildSuggestions(searchIndex, query, {
       activeTags: getActiveTags(),
       favorites: getFavorites(),
+      staples: getEssentials(),
       history: topFrequent(30),
       onList: getItems(),
       maxItems: MAX_SUGGESTION_ROWS,
@@ -127,6 +131,32 @@ function renderSuggestions() {
   rows.forEach((suggestion, position) => {
     const li = suggestionRow(rowKey(suggestion, position), rowLabel(suggestion), rowSub(suggestion), rowIcon(suggestion));
     li.firstElementChild?.addEventListener("click", () => activateSuggestion(suggestion));
+    // Pin toggle on catalog rows (stable slug) and free-add rows
+    // (stable name: key). Tag rows are filters, not products: no pin.
+    const markable = (suggestion.kind === "item" && suggestion.slug) || suggestion.kind === "free-add";
+    if (markable) {
+      try {
+        const ref = {
+          slug: suggestion.kind === "item" ? suggestion.slug : null,
+          name: rowLabel(suggestion),
+        };
+        const pin = essentialButton(essentialKey(ref), isEssential(ref));
+        pin.addEventListener("click", () => {
+          try {
+            const { essential } = toggleEssential(ref);
+            showToast(essential
+              ? `« ${ref.name} » proposé à chaque liste`
+              : `« ${ref.name} » retiré des essentiels`);
+          } catch {
+            showToast("Action impossible");
+          }
+          renderSuggestions();
+        });
+        li.appendChild(pin);
+      } catch {
+        /* Pin is best-effort; the suggestion row still works. */
+      }
+    }
     box.appendChild(li);
   });
   const open = rows.length > 0;
@@ -201,46 +231,66 @@ function updateClearButton() {
 /* Essentials (staple ritual chips)                                    */
 /* ------------------------------------------------------------------ */
 
-function stapleCandidates() {
-  const staples = (catalog?.snapshot?.ingredients ?? [])
-    .filter((entry) => entry?.staple === true)
-    .map((entry) => ({ slug: entry.slug, name: entry.name }));
-  return filterCandidates(staples, {
-    onListSlugs: getItems().map((item) => item.slug).filter(Boolean),
-    recentDecisions: getStapleDecisions(),
+function essentialCandidates() {
+  let essentials = [];
+  try {
+    essentials = getEssentials();
+  } catch {
+    essentials = [];
+  }
+  return userEssentialCandidates(essentials, {
+    onListKeys: getItems().map((item) => item.slug ?? essentialKey({ name: item.name })),
+    decidedKeys: [...tripDecided],
   });
 }
 
 let essentialsDismissed = false;
+/* Stable keys validated/rejected during the current trip (memory only:
+ * the ritual is trip-scoped, so every kept essential is proposed again
+ * on the next trip). Cleared together with essentialsDismissed. */
+const tripDecided = new Set();
 
 function renderEssentials() {
   const section = els.essentials;
   const chips = els.essentialsChips;
   if (!section || !chips) return;
   section.querySelector("[data-ignore-rest]")?.remove();
+  section.querySelector("[data-essentials-hint]")?.remove();
   let enabled = true;
+  let essentialCount = 0;
   try {
     enabled = getPrefs().essentialsEnabled !== false;
+    essentialCount = getEssentials().length;
   } catch {
     enabled = true;
   }
-  ritual = createRitual(stapleCandidates());
-  const pending = essentialsDismissed ? [] : ritual.pending();
   chips.replaceChildren();
+  if (enabled && essentialCount === 0) {
+    section.hidden = false;
+    const hint = document.createElement("p");
+    hint.className = "essentials-hint";
+    hint.setAttribute("data-essentials-hint", "");
+    hint.textContent = "📌 Marquez vos indispensables pour les retrouver à chaque nouvelle liste.";
+    section.appendChild(hint);
+    return;
+  }
+  ritual = createRitual(essentialCandidates());
+  const pending = essentialsDismissed ? [] : ritual.pending();
   section.hidden = !enabled || pending.length === 0;
   if (!enabled || pending.length === 0) return;
   for (const candidate of pending) {
-    const li = essentialChip(candidate.slug, candidate.name, false);
+    const li = essentialChip(candidate.key, candidate.name, false);
     li.firstElementChild?.addEventListener("click", () => {
-      const validated = ritual.validate(candidate.slug);
+      const validated = ritual.validate(candidate.key);
       if (!validated) return;
+      tripDecided.add(validated.key);
       try {
+        const found = validated.slug && catalog ? findEntry(catalog, validated.slug) : undefined;
         addItem({
           name: validated.name,
-          slug: validated.slug,
-          provenance: { source: "cookigram" },
+          slug: validated.slug ?? null,
+          provenance: found ? { source: provenanceForKind(found.kind) } : undefined,
         });
-        noteStapleDecision(validated.slug, "added");
         showToast(`« ${validated.name} » ajouté`);
       } catch {
         showToast("Ajout impossible");
@@ -254,12 +304,8 @@ function renderEssentials() {
     dismiss.title = "Pas cette fois";
     dismiss.textContent = "✕";
     dismiss.addEventListener("click", () => {
-      if (!ritual.reject(candidate.slug)) return;
-      try {
-        noteStapleDecision(candidate.slug, "rejected");
-      } catch {
-        /* Decision is best-effort; the chip still goes away. */
-      }
+      if (!ritual.reject(candidate.key)) return;
+      tripDecided.add(candidate.key);
       renderEssentials();
     });
     li.appendChild(dismiss);
@@ -271,14 +317,7 @@ function renderEssentials() {
   ignoreRest.setAttribute("data-ignore-rest", "");
   ignoreRest.textContent = "Ignorer le reste";
   ignoreRest.addEventListener("click", () => {
-    const rest = ritual.ignoreRest();
-    for (const candidate of rest) {
-      try {
-        noteStapleDecision(candidate.slug, "ignored");
-      } catch {
-        /* Best-effort (see above). */
-      }
-    }
+    ritual.ignoreRest();
     essentialsDismissed = true;
     renderEssentials();
   });
@@ -418,8 +457,9 @@ function wireActions() {
       } catch {
         /* History is best-effort; the clear already succeeded. */
       }
-      // A closed session ends the trip: staples are proposed again next time.
+      // A closed session ends the trip: essentials are proposed again next time.
       essentialsDismissed = false;
+      tripDecided.clear();
       renderEssentials();
       showToast(`${removed.length} article${removed.length > 1 ? "s" : ""} retiré${removed.length > 1 ? "s" : ""}`);
     } else {
@@ -590,6 +630,7 @@ async function boot() {
   subscribe(() => {
     renderEssentials();
     renderHistory();
+    renderSuggestions();
     refreshUndoButton();
   });
 }

@@ -167,7 +167,7 @@ test("scoreSearchMatch: boosts never resurrect a non-match; score never negative
   assert.equal(demoted.onList, true);
 });
 
-test("ranking context: favorite +8, staple +4 (flag or set), onList -12", () => {
+test("ranking context: favorite +8, staple +4 (user essentials only), onList -12", () => {
   assert.equal(BOOST_FAVORITE, 8);
   assert.equal(BOOST_STAPLE, 4);
   assert.equal(BOOST_HISTORY_MAX, 6);
@@ -186,12 +186,17 @@ test("ranking context: favorite +8, staple +4 (flag or set), onList -12", () => 
   // (the "name:" prefix is stripped only on the .key object shape).
   const favNameKey = scoreSearchMatch(ail, "ail", [], { favorites: [{ key: "name:ail" }] });
   assert.equal(favNameKey.boosts.favorite, 8);
-  // Staple flag alone boosts without any context set.
+  // Catalog staple flag alone never boosts: essentials are user-owned.
   const stapleFlag = scoreSearchMatch(farine, "farine");
-  assert.equal(stapleFlag.boosts.staple, 4);
-  // Staple set also boosts non-flag entries.
+  assert.equal(stapleFlag.boosts.staple, 0);
+  // User-essential set boosts (plain slugs).
   const stapleSet = scoreSearchMatch(ail, "ail", [], { staples: ["ail"] });
   assert.equal(stapleSet.boosts.staple, 4);
+  // Lane-G essentials shape {slug,name,key} also matches.
+  const stapleShape = scoreSearchMatch(ail, "ail", [], {
+    staples: [{ slug: "ail", name: "Ail", key: "ail" }],
+  });
+  assert.equal(stapleShape.boosts.staple, 4);
   // On-list demotes.
   const on = scoreSearchMatch(ail, "ail", [], { onList: [{ slug: "ail", name: "Ail" }] });
   assert.equal(on.boosts.onList, -12);
