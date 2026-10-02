@@ -256,11 +256,12 @@ export const getItem = (id) => {
  * (contract §9.2); a checked match is re-activated. Records a frequency
  * signal on every call. Throws when `name` is blank.
  */
-export const addItem = ({ name, qty = "", slug = null, provenance } = {}) => {
+export const addItem = ({ name, qty = "", slug = null, variantId = null, provenance } = {}) => {
   const cleanName = String(name ?? "").trim();
   if (!cleanName) throw new Error("store.addItem: name is required");
   const cleanQty = normalizeQty(qty);
   const cleanSlug = slug ? String(slug) : null;
+  const cleanVariantId = variantId ? String(variantId) : null;
   const items = readItems();
   const existing = items.find(
     (item) => normalizeName(item.name) === normalizeName(cleanName)
@@ -279,6 +280,7 @@ export const addItem = ({ name, qty = "", slug = null, provenance } = {}) => {
   const item = {
     id: createId(),
     slug: cleanSlug,
+    ...(cleanVariantId ? { variantId: cleanVariantId } : {}),
     name: cleanName,
     qty: cleanQty,
     checked: false,

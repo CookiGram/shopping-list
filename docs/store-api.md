@@ -42,6 +42,7 @@ working. Tests may inject a backend via
 {
   id: "7f3c…",            // createId(): randomUUID, Math.random fallback
   slug: "ail",            // catalog slug, or null for free-text items
+  variantId: "box-6",     // optional package choice within that canonical product
   name: "Ail",            // display name (required, trimmed)
   qty: "3 gousses",       // quantity string, "" when unspecified
   checked: false,
@@ -75,7 +76,7 @@ Current list:
 
 - `getItems()` → items in insertion order (copies).
 - `getItem(id)` → item or null.
-- `addItem({name, qty?, slug?, provenance?})` → item. Throws on
+- `addItem({name, qty?, slug?, variantId?, provenance?})` → item. Throws on
   blank `name`. Merges on identical normalized name + qty (no
   duplicate; a checked match is re-activated with `merged: true`
   in the event detail). Records a frequency signal on every call.

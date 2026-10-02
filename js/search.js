@@ -359,7 +359,7 @@ export const entryKeys = (indexedOrEntry) => {
   const entry = indexedOrEntry?.fields
     ? indexedOrEntry.entry
     : splitInput(indexedOrEntry).entry;
-  return [entry.slug, entry.name, ...(entry.aliases ?? [])]
+  return [entry.variantKey ?? entry.slug, entry.name, ...(entry.aliases ?? [])]
     .map((key) => normalizeText(key))
     .filter(Boolean);
 };
@@ -428,7 +428,8 @@ const historyBoost = (keys, history) => {
 };
 
 const computeBoosts = (index, context = {}) => {
-  const keys = entryKeys(index);
+  const canonicalKey = normalizeText(index.entry?.canonicalSlug);
+  const keys = [...entryKeys(index), canonicalKey].filter(Boolean);
   const favorite = keys.some((key) => toKeySet(context.favorites).has(key))
     ? BOOST_FAVORITE
     : 0;
@@ -439,7 +440,12 @@ const computeBoosts = (index, context = {}) => {
     ? BOOST_STAPLE
     : 0;
   const history = historyBoost(keys, context.history);
-  const onList = keys.some((key) => toKeySet(context.onList).has(key));
+  const onList = index.entry?.variantId
+    ? (Array.isArray(context.onList) ? context.onList : []).some(
+        (item) => item?.variantId === index.entry.variantId
+          && normalizeText(item?.slug) === canonicalKey,
+      )
+    : keys.some((key) => toKeySet(context.onList).has(key));
   return {
     favorite,
     staple,
@@ -584,7 +590,10 @@ export const suggestionKey = (item) => {
   if (!item || typeof item !== "object") return "unknown";
   if (item.kind === "free-add") return "free-add";
   if (item.kind === "tag") return `tag-${normalizeText(item.tag ?? item.label) || "tag"}`;
-  return String(item.slug ?? normalizeText(item.label) ?? "item") || "item";
+  const key = item.variantId
+    ? `${item.slug}-${item.variantId}`
+    : item.slug ?? normalizeText(item.label) ?? "item";
+  return String(key) || "item";
 };
 
 /**
@@ -640,7 +649,8 @@ export const buildSuggestions = (entriesOrIndex = [], query = "", options = {}) 
           kind: "item",
           type: "item",
           label: result.indexed.name,
-          slug: result.indexed.slug,
+          slug: result.indexed.entry?.canonicalSlug ?? result.indexed.slug,
+          variantId: result.indexed.entry?.variantId,
           entryKind: result.indexed.kind,
           entry: result.indexed.entry,
           aisle: result.indexed.entry?.aisle ?? "",

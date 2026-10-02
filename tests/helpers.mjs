@@ -110,6 +110,7 @@ export const fixtureFetch = (overrides = {}) => {
   const files = {
     "cookigram-catalog.json": fixtureSnapshot(),
     "shopping-dict.json": fixtureDict(),
+    "product-variants.json": { schema: 1, entries: [] },
     "aisles.json": fixtureAisleMap(),
     ...overrides,
   };

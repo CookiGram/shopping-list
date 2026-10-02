@@ -18,6 +18,7 @@ export const normalizeKey = (value) =>
 const DATA_FILES = {
   snapshot: "cookigram-catalog.json",
   dict: "shopping-dict.json",
+  variants: "product-variants.json",
   aisleMap: "aisles.json",
 };
 
@@ -34,15 +35,20 @@ const buildAliasMap = (entries) => {
   return map;
 };
 
-const assemble = (snapshot, dict, aisleMap) => {
-  const order = [
+const assemble = (snapshot, dict, variants, aisleMap) => {
+  const order = [...new Set([
     ...snapshot.aisles.filter((a) => a !== aisleMap.fallback),
     ...dict.aisles,
     aisleMap.fallback,
-  ];
+  ])];
   return {
     snapshot,
     dict,
+    variants,
+    variantsByProduct: (variants.entries ?? []).reduce((groups, variant) => {
+      (groups[variant.canonical_slug] ??= []).push(variant);
+      return groups;
+    }, {}),
     aisleMap,
     order,
     aliasCulinary: buildAliasMap(snapshot.ingredients),
@@ -65,12 +71,13 @@ export const loadCatalog = async (options = {}) => {
     if (!res.ok) throw new Error(`catalog: ${file} → HTTP ${res.status}`);
     return res.json();
   };
-  const [snapshot, dict, aisleMap] = await Promise.all([
+  const [snapshot, dict, variants, aisleMap] = await Promise.all([
     get(DATA_FILES.snapshot),
     get(DATA_FILES.dict),
+    get(DATA_FILES.variants),
     get(DATA_FILES.aisleMap),
   ]);
-  cached = assemble(snapshot, dict, aisleMap);
+  cached = assemble(snapshot, dict, variants, aisleMap);
   return cached;
 };
 
@@ -103,11 +110,31 @@ export const findEntry = (catalog, key) => {
   return undefined;
 };
 
-/** Flat [{kind, entry}] view for search indexing. */
-export const allEntries = (catalog) => [
-  ...catalog.snapshot.ingredients.map((entry) => ({ kind: "culinary", entry })),
-  ...catalog.dict.entries.map((entry) => ({ kind: "household", entry })),
-];
+/** Search rows: products with variants are represented by their choices. */
+export const allEntries = (catalog) => {
+  const products = [
+    ...catalog.snapshot.ingredients.map((entry) => ({ kind: "culinary", entry })),
+    ...catalog.dict.entries.map((entry) => ({ kind: "household", entry })),
+  ];
+  return products.flatMap(({ kind, entry }) => {
+    const variants = catalog.variantsByProduct?.[entry.slug] ?? [];
+    if (!variants.length) return [{ kind, entry }];
+    return variants.map((variant) => ({
+      kind,
+      entry: {
+        ...entry,
+        slug: `${entry.slug}--${variant.id}`,
+        canonicalSlug: entry.slug,
+        variantId: variant.id,
+        variantKey: `${entry.slug}::${variant.id}`,
+        name: `${variant.product_label ?? entry.name} · ${variant.label}`,
+        aliases: [...(entry.aliases ?? []), ...(variant.aliases ?? [])],
+        icon: variant.icon,
+        variant,
+      },
+    }));
+  });
+};
 
 /** Full display aisle order: culinary, then household, fallback last. */
 export const catalogAisleOrder = (catalog) => [...catalog.order];

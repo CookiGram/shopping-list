@@ -3,7 +3,8 @@
     "Maison & entretien",
     "Hygiène & beauté",
     "Bébé & enfants",
-    "Animalerie"
+    "Animalerie",
+    "Épicerie"
   ],
   "bySlug": {
     "liquide-vaisselle": 0,
@@ -53,7 +54,9 @@
     "sel-lave-vaisselle": 44,
     "serviettes-hygieniques": 45,
     "shampoing-bebe": 46,
-    "eau-de-javel": 47
+    "eau-de-javel": 47,
+    "coca-zero": 48,
+    "the-glace": 49
   },
   "entries": [
     {
@@ -800,10 +803,35 @@
         "ménage",
         "désinfection"
       ]
+    },
+    {
+      "aliases": [
+        "coca",
+        "coca zero",
+        "coca-cola zero",
+        "coca cola zero",
+        "cola zero",
+        "soda zero"
+      ],
+      "aisle": "Épicerie",
+      "category": "Boissons",
+      "icon": "",
+      "name": "Coca Zero",
+      "slug": "coca-zero",
+      "tags": ["boissons"]
+    },
+    {
+      "aliases": ["thé", "thé glacé", "the glace", "iced tea"],
+      "aisle": "Épicerie",
+      "category": "Boissons",
+      "icon": "",
+      "name": "Thé glacé",
+      "slug": "the-glace",
+      "tags": ["boissons"]
     }
   ],
   "meta": {
-    "note": "Lane-C authored non-culinary vocabulary (household, hygiene, baby, pets). Culinary-adjacent consumables already covered by the CookiGram snapshot (papier-aluminium, papier-cuisson→papier-sulfurise) are intentionally NOT duplicated here.",
+    "note": "Shopping-owned vocabulary for household needs plus locally authored packaged products. Culinary products already present in the CookiGram snapshot keep their canonical slugs and receive package choices through product-variants.json.",
     "schema": 1
   }
 }
