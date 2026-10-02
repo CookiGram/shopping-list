@@ -15,6 +15,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const css = readFileSync(join(root, "css", "app.css"), "utf8");
 const appJs = readFileSync(join(root, "js", "app.js"), "utf8");
 const aisleJs = readFileSync(join(root, "js", "aisle-filter.js"), "utf8");
+const swJs = readFileSync(join(root, "sw.js"), "utf8");
 
 const rule = (selector) => {
   const m = css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`));
@@ -82,6 +83,13 @@ test("CT30: re-render conserve le scroll (chip actif visible)", () => {
   assert.ok(
     render[0].includes("scrollLeft"),
     "le re-render restaure le scroll horizontal (pas de saut à Tous)",
+  );
+});
+
+test("CT30: module rayon inclus dans le précache offline", () => {
+  assert.ok(
+    swJs.includes("./js/aisle-filter.js"),
+    "sw.js précache aisle-filter.js (chips fonctionnelles hors ligne)",
   );
 });
 

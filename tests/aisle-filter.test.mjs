@@ -24,6 +24,12 @@ import {
   AISLE_BAR_SELECTOR,
   ALL_AISLES_LABEL,
 } from "../js/aisle-filter.js";
+import {
+  loadCatalog,
+  allEntries,
+  catalogAisleOrder,
+  clearCatalogCache,
+} from "../js/catalog.js";
 import { searchEntries } from "./helpers.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -68,20 +74,27 @@ test("issue #30: chips = ordre canonique restreint aux rayons présents", () => 
   assert.deepEqual(chips, ["Épicerie", "Fruits & légumes", "Maison & entretien"]);
 });
 
-test("issue #30: chips réels — ordre canonique, pas de chip vide", () => {
-  const aisleMap = JSON.parse(readFileSync(join(root, "data", "aisles.json"), "utf8"));
-  const snapshot = JSON.parse(readFileSync(join(root, "data", "cookigram-catalog.json"), "utf8"));
-  const dict = JSON.parse(readFileSync(join(root, "data", "shopping-dict.json"), "utf8"));
-  const entries = [
-    ...snapshot.ingredients.map((entry) => ({ kind: "culinary", entry })),
-    ...dict.entries.map((entry) => ({ kind: "household", entry })),
-  ];
-  const order = [
-    ...snapshot.aisles.filter((a) => a !== aisleMap.fallback),
-    ...dict.aisles,
-    aisleMap.fallback,
-  ];
-  const chips = aisleChips({ order }, entries);
+test("issue #30: chips réels — ordre canonique, pas de chip vide", async () => {
+  // Intégration réelle : loadCatalog + allEntries + catalogAisleOrder,
+  // pour ne jamais reconstruire assemble() à la main (la dédup de
+  // l'ordre vit dans catalog.js depuis les variantes #34).
+  const files = {
+    "cookigram-catalog.json": "cookigram-catalog.json",
+    "shopping-dict.json": "shopping-dict.json",
+    "product-variants.json": "product-variants.json",
+    "aisles.json": "aisles.json",
+  };
+  const fetchImpl = async (url) => ({
+    ok: true,
+    json: async () =>
+      JSON.parse(
+        readFileSync(join(root, "data", files[String(url).split("/").pop()]), "utf8"),
+      ),
+  });
+  clearCatalogCache();
+  const catalog = await loadCatalog({ fetchImpl, baseUrl: "https://test.invalid/data/" });
+  const order = catalogAisleOrder(catalog);
+  const chips = aisleChips(catalog, allEntries(catalog));
   assert.ok(chips.length > 0, "au moins un rayon présent");
   assert.ok(!chips.includes("Fond de placard"), "rayon vide exclu (0 ingrédient)");
   assert.ok(chips.includes("À vérifier"), "rayon non vide inclus");
