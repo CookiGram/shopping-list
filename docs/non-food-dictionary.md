@@ -136,7 +136,7 @@ Pour ajouter un produit non culinaire :
    - Préfixer obligatoirement par `<category>.` suivi du slug technique anglais en kebab-case (ex. `household.matches`).
 4. **Rédiger le label et les aliases :**
    - `label` : Nom d'usage courant en français avec majuscule initiale (ex. `Allumettes`).
-   - `aliases` : 2 à 4 synonymes ou variantes de recherche réelles (ex. `["boîte d'allumettes", "allumettes longues"]`).
+   - `aliases` : 2 à 4 synonymes ou variantes de recherche réelles quand ils existent (ex. `["boîte d'allumettes", "allumettes longues"]`). C'est une recommandation éditoriale ; le contrat de schéma minimal n'exige qu'au moins 1 alias (§3).
 5. **Choisir l'icône sémantique :**
    - Une clé kebab-case décrivant le concept (ex. `matches`). Si un concept similaire existe déjà, réutiliser la clé (ex. `batteries` pour AA et AAA).
 6. **Choisir l'unité par défaut :**

@@ -41,6 +41,31 @@ const KNOWN_BRANDS = [
   "sopalin", "velpeau", "kleenex", "scottex", "scotch", "pousse-mousse", "pousse mousse", "band-aid", "q-tips"
 ];
 
+/** Split text into normalized word tokens (lowercase, diacritics stripped). */
+const tokenizeTerm = (s) =>
+  normalizeTerm(s).split(/[^a-z0-9]+/).filter(Boolean);
+
+// Pre-tokenized brand sequences, aligned with KNOWN_BRANDS by index.
+const BRAND_TOKEN_SEQS = KNOWN_BRANDS.map(tokenizeTerm);
+
+/**
+ * Return the first known brand found in `text` as contiguous whole tokens,
+ * or null. Word-boundary matching: "rasoir Bic" matches "bic" but
+ * "bicarbonate de soude" does not; "savon Le Chat" matches "le chat"
+ * but a lone generic "chat" does not.
+ */
+const findBrandInText = (text) => {
+  const tokens = tokenizeTerm(text);
+  for (let b = 0; b < KNOWN_BRANDS.length; b++) {
+    const seq = BRAND_TOKEN_SEQS[b];
+    if (seq.length === 0) continue;
+    for (let i = 0; i + seq.length <= tokens.length; i++) {
+      if (seq.every((tok, j) => tokens[i + j] === tok)) return KNOWN_BRANDS[b];
+    }
+  }
+  return null;
+};
+
 test("non-food dictionary: JSON is parseable and valid schema version/locale", async () => {
   const content = await readFile(dictPath, "utf8");
   assert.doesNotThrow(() => JSON.parse(content), "File should be valid JSON");
@@ -154,24 +179,41 @@ test("non-food dictionary: no commercial brand names in labels or aliases", asyn
   const data = JSON.parse(await readFile(dictPath, "utf8"));
 
   for (const item of data.items) {
-    const labelLower = item.label.toLowerCase();
-    for (const brand of KNOWN_BRANDS) {
-      assert.ok(
-        !labelLower.includes(brand),
-        `Item label "${item.label}" contains commercial brand "${brand}"`,
-      );
-    }
+    assert.equal(
+      findBrandInText(item.label),
+      null,
+      `Item label "${item.label}" contains commercial brand "${findBrandInText(item.label)}"`,
+    );
 
     for (const alias of item.aliases) {
-      const aliasLower = alias.toLowerCase();
-      for (const brand of KNOWN_BRANDS) {
-        assert.ok(
-          !aliasLower.includes(brand),
-          `Item alias "${alias}" (in ${item.id}) contains commercial brand "${brand}"`,
-        );
-      }
+      assert.equal(
+        findBrandInText(alias),
+        null,
+        `Item alias "${alias}" (in ${item.id}) contains commercial brand "${findBrandInText(alias)}"`,
+      );
     }
   }
+});
+
+test("non-food dictionary: brand detection respects word boundaries (no substring false positives)", () => {
+  // Direct unit proof of the matcher itself, independent of dictionary content.
+  // Single-word brands detected as whole words…
+  assert.equal(findBrandInText("BIC"), "bic");
+  assert.equal(findBrandInText("rasoir Bic"), "bic");
+  assert.equal(findBrandInText("Lotion Dove"), "dove");
+  assert.equal(findBrandInText("Lessive Skip"), "skip");
+  // …but never as inner substrings of generic words.
+  assert.equal(findBrandInText("bicarbonate de soude"), null);
+  assert.equal(findBrandInText("Bicarbonate alimentaire"), null);
+  // Multi-word brands detected as contiguous phrases…
+  assert.equal(findBrandInText("croquettes Royal Canin"), "royal canin");
+  assert.equal(findBrandInText("shampooing Head & Shoulders"), "head & shoulders");
+  assert.equal(findBrandInText("savon Le Chat"), "le chat");
+  assert.equal(findBrandInText("savon Le Petit Marseillais"), "le petit marseillais");
+  // …but a lone generic word never matches a longer brand phrase.
+  assert.equal(findBrandInText("jouet pour chat"), null);
+  assert.equal(findBrandInText("friandises pour chat"), null);
+  assert.equal(findBrandInText("canin"), null);
 });
 
 test("non-food dictionary: balanced category distribution", async () => {
