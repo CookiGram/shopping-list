@@ -51,3 +51,16 @@ test("voice-ui: mic and review styles present", () => {
 test("voice-ui: voice helper precached for offline shell", () => {
   assert.ok(swJs.includes("./js/voice.js"), "js/voice.js in SW precache");
 });
+
+test("voice-ui: stale recognition callbacks cannot override the active session", () => {
+  for (const callback of ["onstart", "onresult", "onerror", "onend"]) {
+    const marker = `recognition.${callback} = `;
+    const start = appJs.indexOf(marker);
+    assert.notEqual(start, -1, `${callback} wired`);
+    const slice = appJs.slice(start, start + 260);
+    assert.ok(
+      slice.includes("if (voiceRecognition !== recognition) return;"),
+      `${callback} ignores stale recognition instances`,
+    );
+  }
+});
