@@ -358,6 +358,32 @@ export const clearAll = () => {
   return count;
 };
 
+/**
+ * Freeze every currently editable item (#9 global validate). Marks all
+ * items lacking the frozen flag, persists, and emits. An absent flag
+ * reads as editable, so historical items need no migration. Frozen
+ * items keep check/uncheck; only their edit controls hide.
+ * Returns the number newly frozen.
+ */
+export const freezeEditable = () => {
+  const items = readItems();
+  let count = 0;
+  for (const item of items) {
+    if (item && !item.frozen) {
+      item.frozen = true;
+      count += 1;
+    }
+  }
+  if (count === 0) return 0;
+  writeStoreKey(STORE_KEYS.items, items);
+  emitStoreChange("items:freeze", { count });
+  return count;
+};
+
+/** True when at least one item is still editable (drives ✓ visibility). Pure. */
+export const hasEditable = (items = []) =>
+  (Array.isArray(items) ? items : []).some((item) => !item?.frozen);
+
 /* ------------------------------------------------------------------ */
 /* Frequency signal                                                    */
 /*                                                     {normName: {name, slug, count, lastUsedAt}} */
