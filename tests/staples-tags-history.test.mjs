@@ -94,6 +94,32 @@ test("createRitual: full decide without ignoreRest", () => {
   assert.deepEqual(ritual.decisions(), [{ key: "a", slug: "a", name: "A", decision: "added" }]);
 });
 
+test("createRitual: decisions()/isDone() consult the stable key (custom + catalog)", () => {
+  // Custom (slugless) candidate: validate by name: key.
+  const added = createRitual([{ slug: null, name: "Truc maison" }]);
+  assert.deepEqual(added.validate("name:truc maison"), {
+    key: "name:truc maison", slug: null, name: "Truc maison",
+  });
+  assert.deepEqual(added.decisions(), [
+    { key: "name:truc maison", slug: null, name: "Truc maison", decision: "added" },
+  ]);
+  assert.equal(added.isDone(), true);
+  // Custom candidate: reject by name: key.
+  const rejected = createRitual([{ slug: null, name: "Truc maison" }]);
+  assert.equal(rejected.reject("name:truc maison"), true);
+  assert.deepEqual(rejected.decisions(), [
+    { key: "name:truc maison", slug: null, name: "Truc maison", decision: "rejected" },
+  ]);
+  assert.equal(rejected.isDone(), true);
+  // Existing catalog case still works (key === slug).
+  const catalog = createRitual([{ slug: "farine", name: "Farine" }]);
+  catalog.validate("farine");
+  assert.deepEqual(catalog.decisions(), [
+    { key: "farine", slug: "farine", name: "Farine", decision: "added" },
+  ]);
+  assert.equal(catalog.isDone(), true);
+});
+
 test("filterCandidates: onList + rejected-cooldown suppressed; added/ignored re-proposed", () => {
   const now = 1_700_000_000_000;
   const day = 24 * 3600 * 1000;

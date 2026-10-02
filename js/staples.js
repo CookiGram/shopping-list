@@ -99,10 +99,10 @@ export const createRitual = (candidates = []) => {
     decisions: () => list
       .map((candidate) => ({
         ...candidate,
-        decision: decisions.get(candidate.slug) ?? (restIgnored ? "ignored" : null),
+        decision: decisions.get(candidate.key) ?? (restIgnored ? "ignored" : null),
       }))
       .filter((entry) => entry.decision !== null),
-    isDone: () => restIgnored || list.every((candidate) => decisions.has(candidate.slug)),
+    isDone: () => restIgnored || list.every((candidate) => decisions.has(candidate.key)),
   };
 };
 
