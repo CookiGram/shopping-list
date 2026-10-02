@@ -352,11 +352,45 @@ main {
 
 .shopping-item-row {
   display:grid;
-  grid-template-columns:24px 30px minmax(0,1fr) auto;
+  grid-template-columns:24px 30px minmax(0,1fr) auto auto auto;
   gap:var(--space-2);
   align-items:center;
   min-height:48px;
   padding:var(--space-1) 0;
+}
+
+/* #7 quantity stepper: compact but 44px touch targets. */
+.qty-stepper {
+  display:flex;
+  align-items:center;
+  gap:var(--space-1);
+}
+.qty-btn {
+  display:inline-grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--ink);
+  font-size:1.25rem;
+  line-height:1;
+  cursor:pointer;
+}
+.qty-btn:hover {
+  background:var(--cream);
+}
+.qty-btn:disabled {
+  opacity:.35;
+  cursor:default;
+  background:transparent;
+}
+.qty-value {
+  min-width:1.5ch;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
 }
 
 .shopping-item input[type="checkbox"] {
@@ -671,6 +705,6 @@ main {
   main { gap:16px; }
   .shopping-list { gap:16px; }
   .shopping-group h3 { font-size:1rem; }
-  .shopping-item-row { grid-template-columns:24px 28px minmax(0,1fr) auto; }
+  .shopping-item-row { grid-template-columns:24px 28px minmax(0,1fr) auto auto auto; }
   .shopping-action { width:46px; height:46px; }
 }
