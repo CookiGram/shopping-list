@@ -253,7 +253,55 @@ function filteredEmptyState(query) {
 }
 
 /**
+ * Split items into active vs checked, preserving order (pure).
+ * Returns {active, checked}.
+ */
+export const splitByChecked = (items = []) => {
+  const active = [];
+  const checked = [];
+  for (const item of items ?? []) {
+    (item?.checked ? checked : active).push(item);
+  }
+  return { active, checked };
+};
+
+const SECTION_TITLES = Object.freeze({
+  active: "Encore à prendre",
+  checked: "Plus nécessaire",
+});
+
+function sectionElement(kind, groups, { iconBase, isFavorite }) {
+  const section = document.createElement("section");
+  section.className = `list-section list-section--${kind}`;
+  section.setAttribute("data-list-section", kind);
+  const title = document.createElement("h3");
+  title.className = "list-section-title";
+  title.textContent = SECTION_TITLES[kind] ?? kind;
+  section.appendChild(title);
+  for (const [aisle, rows] of groups) {
+    section.appendChild(
+      aisleCard(
+        aisle,
+        rows.map(({ item, meta }) => {
+          let favorite = null;
+          try {
+            favorite = !!isFavorite(item);
+          } catch {
+            favorite = !!item.favorite;
+          }
+          return itemRow(item, meta, { iconBase, favorite });
+        }),
+      ),
+    );
+  }
+  return section;
+}
+
+/**
  * Render items into container (cleared first). Returns {rendered, total}.
+ * Items render in two semantic sections — active ("Encore à prendre")
+ * always before checked ("Plus nécessaire"); each section only renders
+ * when non-empty and is never collapsible.
  * Options: {filter, query(for the filtered-empty message), iconBase,
  *           isFavorite: (item) => bool (default: item.favorite),
  *           count: true|false|Element|selector (default true → "#count")}.
@@ -267,31 +315,27 @@ export function renderList(container, items, catalog, options = {}) {
     count = true,
   } = options;
   const list = items ?? [];
-  const { groups } = groupItemsByAisle(list, catalog, filter);
+  const { active, checked } = splitByChecked(list);
+  const activeGroups = groupItemsByAisle(active, catalog, filter).groups;
+  const checkedGroups = groupItemsByAisle(checked, catalog, filter).groups;
   container.replaceChildren();
-  if (!groups.length) {
+  if (!activeGroups.length && !checkedGroups.length) {
     container.appendChild(list.length ? filteredEmptyState(query) : emptyState());
   } else {
-    for (const [aisle, rows] of groups) {
-      container.appendChild(
-        aisleCard(
-          aisle,
-          rows.map(({ item, meta }) => {
-            let favorite = null;
-            try {
-              favorite = !!isFavorite(item);
-            } catch {
-              favorite = !!item.favorite;
-            }
-            return itemRow(item, meta, { iconBase, favorite });
-          }),
-        ),
-      );
+    const rowOptions = { iconBase, isFavorite };
+    if (activeGroups.length) {
+      container.appendChild(sectionElement("active", activeGroups, rowOptions));
+    }
+    if (checkedGroups.length) {
+      container.appendChild(sectionElement("checked", checkedGroups, rowOptions));
     }
   }
   updateCount(count, list);
   activateTags(container);
-  return { rendered: groups.reduce((n, [, rows]) => n + rows.length, 0), total: list.length };
+  const rendered =
+    activeGroups.reduce((n, [, rows]) => n + rows.length, 0) +
+    checkedGroups.reduce((n, [, rows]) => n + rows.length, 0);
+  return { rendered, total: list.length };
 }
 
 export function updateCount(target, items) {

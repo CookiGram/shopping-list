@@ -287,6 +287,23 @@ main {
   gap:var(--space-4);
 }
 
+.list-section {
+  display:grid;
+  gap:var(--space-3);
+}
+
+.list-section-title {
+  margin:0;
+  font-family:var(--font-serif);
+  font-size:.95rem;
+  font-weight:600;
+}
+
+.list-section--checked .list-section-title {
+  color:var(--ink-soft, var(--ink));
+  font-weight:500;
+}
+
 .shopping-group { padding:0; background:transparent; }
 
 .shopping-group h3 {
@@ -471,6 +488,21 @@ main {
 .shopping-action:hover {
   transform:translateY(-1px);
   box-shadow:0 0 0 3px #e96f3a33;
+}
+
+.shopping-action--glyph {
+  font-size:1.5rem;
+  line-height:1;
+}
+
+.shopping-action:disabled {
+  opacity:.35;
+  cursor:default;
+}
+
+.shopping-action:disabled:hover {
+  transform:none;
+  box-shadow:none;
 }
 
 .shopping-action-icon {

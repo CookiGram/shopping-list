@@ -11,6 +11,7 @@ import {
   resolveItemMeta,
   matchQuery,
   groupItemsByAisle,
+  splitByChecked,
 } from "../js/list.js";
 import { loadCatalog, clearCatalogCache } from "../js/catalog.js";
 import { fixtureFetch } from "./helpers.mjs";
@@ -122,4 +123,21 @@ test("groupItemsByAisle: null-safe (null catalog, null items)", () => {
   assert.deepEqual(groups.map(([aisle]) => aisle), ["À vérifier"]);
   assert.deepEqual(groupItemsByAisle(null, catalog).groups, []);
   assert.deepEqual(groupItemsByAisle(undefined, null).groups, []);
+});
+
+test("splitByChecked: stable partition, favorites/category/identity preserved (issue #5)", () => {
+  const items = [
+    { id: "a", name: "Sel", checked: true, favorite: true, category: "Épicerie" },
+    { id: "b", name: "Lait", checked: false },
+    { id: "c", name: "Beurre", checked: true },
+    { id: "d", name: "Pâtes" },
+  ];
+  const { active, checked } = splitByChecked(items);
+  assert.deepEqual(active.map((i) => i.id), ["b", "d"]);
+  assert.deepEqual(checked.map((i) => i.id), ["a", "c"]);
+  // Same object references: nothing cloned or dropped.
+  assert.equal(checked[0].favorite, true);
+  assert.equal(checked[0].category, "Épicerie");
+  assert.deepEqual(splitByChecked([]), { active: [], checked: [] });
+  assert.deepEqual(splitByChecked(null), { active: [], checked: [] });
 });

@@ -10,7 +10,10 @@
  * re-weighted): normalizeText / tokenize / matchSearch / scoreSearchMatch
  * / compareSearchResults keep the CookiGram signatures, *Card renamed to
  * *Ingredient. SEARCH_FIELDS = ['name','aliases','category'] with
- * name exact 60 / prefix 45, aliases exact 35, category exact 10.
+ * name exact 60 / prefix 45 / substring 25, aliases exact 35,
+ * category exact 10, fuzzy 1. Final order is by RANK_TIER first
+ * (exact → word/prefix → contains → alias → category → fuzzy → tags),
+ * numeric score only breaks ties within a tier.
  *
  * Guarantees:
  * - free-add is ALWAYS allowed: freeAddSuggestion() returns a usable
@@ -24,6 +27,7 @@ export const normalizeText = (str) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/[-_/]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -49,6 +53,60 @@ export const MAX_SUGGESTIONS = 8;
  * all MAX_SUGGESTIONS rows.
  */
 export const MAX_TAG_ROWS = 3;
+
+/**
+ * Relevance tiers (issue #3). Lower wins; a tag row (TAG) never outranks
+ * any item match unless the query explicitly starts with `#`
+ * (TAG_PRIORITY). Within a tier, numeric score then FR name break ties.
+ */
+export const RANK_TIER = Object.freeze({
+  EXACT_NAME: 0,
+  WORD_OR_PREFIX: 1,
+  NAME_CONTAINS: 2,
+  ALIAS: 3,
+  CATEGORY: 4,
+  FUZZY: 5,
+  TAG: 6,
+  TAG_PRIORITY: -1,
+});
+
+/** Levenshtein distance (tiny strings; full DP is fine). */
+export const levenshtein = (a = "", b = "") => {
+  const left = String(a ?? "");
+  const right = String(b ?? "");
+  if (left === right) return 0;
+  if (!left.length) return right.length;
+  if (!right.length) return left.length;
+  let prev = Array.from({ length: right.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= left.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= right.length; j++) {
+      next[j] = Math.min(
+        prev[j] + 1,
+        next[j - 1] + 1,
+        prev[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1),
+      );
+    }
+    prev = next;
+  }
+  return prev[right.length];
+};
+
+/** Strict fuzzy budget: typo-tolerant, never spammy. */
+export const fuzzyThreshold = (token = "") =>
+  String(token ?? "").length <= 4 ? 1 : 2;
+
+const fuzzyMatchesTokens = (token, tokens = []) => {
+  if (!token || token.length < 3) return false;
+  const budget = fuzzyThreshold(token);
+  return tokens.some(
+    (candidate) =>
+      candidate &&
+      candidate !== token &&
+      Math.abs(candidate.length - token.length) <= budget &&
+      levenshtein(token, candidate) <= budget,
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /* Index                                                               */
@@ -167,10 +225,11 @@ export const matchSearch = (indexed, query = "", structuredTerms = []) => {
   const index = indexed?.fields ? indexed : indexSearchIngredient(indexed);
   const queryTokens = tokenize(query);
   const terms = normalizeTerms(structuredTerms);
-  const freeTextMatches = queryTokens.map((token) =>
-    SEARCH_FIELDS.some(
-      (field) => tokenMatchesField(token, index.fields[field]).matched,
-    ),
+  const freeTextMatches = queryTokens.map(
+    (token) =>
+      SEARCH_FIELDS.some(
+        (field) => tokenMatchesField(token, index.fields[field]).matched,
+      ) || fuzzyMatchesTokens(token, index.fields.name.tokens),
   );
   const structuredMatches = terms.map((term) => {
     const fieldName = structuredField(term);
@@ -196,6 +255,9 @@ const scoreToken = (token, index) => {
   const nameMatch = tokenMatchesField(token, name);
   if (nameMatch.exact) return { score: 60, field: "name", kind: "exact" };
   if (nameMatch.prefix) return { score: 45, field: "name", kind: "prefix" };
+  if (nameMatch.substring) {
+    return { score: 25, field: "name", kind: "substring" };
+  }
   const aliasMatch = tokenMatchesField(token, index.fields.aliases);
   if (aliasMatch.exact) return { score: 35, field: "aliases", kind: "exact" };
   if (aliasMatch.prefix || aliasMatch.substring) {
@@ -206,7 +268,27 @@ const scoreToken = (token, index) => {
   if (categoryMatch.prefix || categoryMatch.substring) {
     return { score: 3, field: "category", kind: "substring" };
   }
+  if (fuzzyMatchesTokens(token, name.tokens)) {
+    return { score: 1, field: "name", kind: "fuzzy" };
+  }
   return { score: 0, field: null, kind: null };
+};
+
+/** Best (lowest) relevance tier for one token evidence + query. */
+const evidenceTier = (evidence, queryText, nameText) => {
+  if (!evidence || !evidence.field) return null;
+  if (queryText && queryText === nameText) return RANK_TIER.EXACT_NAME;
+  if (evidence.field === "name") {
+    if (evidence.kind === "phrase") return RANK_TIER.EXACT_NAME;
+    if (evidence.kind === "exact" || evidence.kind === "prefix") {
+      return RANK_TIER.WORD_OR_PREFIX;
+    }
+    if (evidence.kind === "substring") return RANK_TIER.NAME_CONTAINS;
+    if (evidence.kind === "fuzzy") return RANK_TIER.FUZZY;
+  }
+  if (evidence.field === "aliases") return RANK_TIER.ALIAS;
+  if (evidence.field === "category") return RANK_TIER.CATEGORY;
+  return null;
 };
 
 /* --- ranking context (favorites / staples / history / list) --- */
@@ -384,6 +466,12 @@ export const scoreSearchMatch = (
     ? computeBoosts(index, context)
     : { favorite: 0, staple: 0, history: 0, onList: 0 };
   const boostTotal = boosts.favorite + boosts.staple + boosts.history + boosts.onList;
+  const queryText = normalizeText(query);
+  const tiers = match.matched
+    ? evidence
+        .map((item) => evidenceTier(item, queryText, index.fields.name.text))
+        .filter((tier) => tier !== null)
+    : [];
   return {
     ...match,
     indexed: index,
@@ -392,6 +480,7 @@ export const scoreSearchMatch = (
     boostTotal,
     onList: boosts.onList !== 0,
     score: Math.max(0, baseScore + boostTotal),
+    tier: tiers.length ? Math.min(...tiers) : null,
     evidence,
   };
 };
@@ -403,6 +492,9 @@ export const compareSearchResults = (left, right) => {
     left?.score === undefined ? scoreSearchMatch(left) : left;
   const b =
     right?.score === undefined ? scoreSearchMatch(right) : right;
+  const aTier = a?.tier ?? RANK_TIER.TAG;
+  const bTier = b?.tier ?? RANK_TIER.TAG;
+  if (aTier !== bTier) return aTier - bTier;
   if (b.score !== a.score) return b.score - a.score;
   const aIndex = a.indexed ?? a.index ?? a;
   const bIndex = b.indexed ?? b.index ?? b;
@@ -489,19 +581,24 @@ export const suggestionKey = (item) => {
 
 /**
  * Mixed item + tag suggestions, max `maxItems` catalog rows (default 8),
- * tags first (exact → prefix → substring, FR tiebreak, capped at
- * MAX_TAG_ROWS while items match), then items (score desc, FR
- * tiebreak). A free-add row is appended whenever the
- * query is non-blank and `includeFreeAdd` is not false — always allowed,
- * even on exact matches or zero matches. Returns [] for blank queries
- * without active tags.
+ * ordered by relevance tier (RANK_TIER): exact name → word/prefix →
+ * name-contains → alias → category → fuzzy → tags. Tag rows keep their
+ * internal exact → prefix → substring FR order and stay capped at
+ * MAX_TAG_ROWS while items match. A leading `#` flips tags first
+ * (TAG_PRIORITY) while still listing item matches after. A free-add row
+ * is appended whenever the query is non-blank and `includeFreeAdd` is
+ * not false — always allowed, even on exact matches or zero matches.
+ * Returns [] for blank queries without active tags.
  */
 export const buildSuggestions = (entriesOrIndex = [], query = "", options = {}) => {
   const maxItems = Number.isFinite(Number(options.maxItems))
     ? Math.max(0, Number(options.maxItems))
     : MAX_SUGGESTIONS;
   const terms = normalizeTerms(options.structuredTerms ?? options.activeTags ?? []);
-  const tokens = tokenize(query);
+  const raw = String(query ?? "");
+  const tagMode = raw.trimStart().startsWith("#");
+  const effectiveQuery = tagMode ? raw.replace(/^[\s#]+/, "") : raw;
+  const tokens = tokenize(effectiveQuery);
   if (!tokens.length && !terms.length) return [];
 
   const activeTagKeys = new Set(terms.map((term) => normalizeText(term.label)));
@@ -526,11 +623,12 @@ export const buildSuggestions = (entriesOrIndex = [], query = "", options = {}) 
       label: candidate.label,
       tag: candidate.tag,
       rank: candidate.rank,
+      tier: tagMode ? RANK_TIER.TAG_PRIORITY : RANK_TIER.TAG,
     }));
 
   const itemMatches =
     tokens.length || terms.length
-      ? searchIngredients(entriesOrIndex, query, options).map((result) => ({
+      ? searchIngredients(entriesOrIndex, effectiveQuery, options).map((result) => ({
           kind: "item",
           type: "item",
           label: result.indexed.name,
@@ -543,18 +641,21 @@ export const buildSuggestions = (entriesOrIndex = [], query = "", options = {}) 
           baseScore: result.baseScore,
           boosts: result.boosts,
           onList: result.onList,
+          tier: result.tier ?? RANK_TIER.TAG,
         }))
       : [];
 
   const tagCap = itemMatches.length
     ? Math.min(MAX_TAG_ROWS, maxItems)
     : maxItems;
+  // Stable tier sort: pre-sliced tag rows (rank order) and item rows
+  // (tier/score/name order) keep their internal order within a tier.
   const catalogRows = [
     ...tagMatches.slice(0, tagCap),
     ...itemMatches.slice(0, Math.max(0, maxItems - Math.min(tagMatches.length, tagCap))),
-  ];
+  ].sort((a, b) => (a.tier ?? RANK_TIER.TAG) - (b.tier ?? RANK_TIER.TAG));
   if (options.includeFreeAdd === false) return catalogRows;
-  const freeAdd = freeAddSuggestion(query);
+  const freeAdd = freeAddSuggestion(tagMode ? effectiveQuery : query);
   return freeAdd ? [...catalogRows, freeAdd] : catalogRows;
 };
 

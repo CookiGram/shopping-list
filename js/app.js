@@ -30,6 +30,8 @@ import {
   getPrefs,
   getStapleDecisions,
   noteStapleDecision,
+  canUndoCheck,
+  undoLastCheck,
 } from "./store.js";
 import { mountList, groupItemsByAisle, DEFAULT_ICON_BASE, TAG_EVENT } from "./list.js";
 import {
@@ -378,7 +380,31 @@ async function copyText(text) {
 /* Actions bar                                                         */
 /* ------------------------------------------------------------------ */
 
+function refreshUndoButton() {
+  const btn = document.querySelector("[data-undo-check]");
+  if (!btn) return;
+  let enabled = false;
+  try {
+    enabled = canUndoCheck();
+  } catch {
+    enabled = false;
+  }
+  if (enabled) btn.removeAttribute("disabled");
+  else btn.setAttribute("disabled", "");
+}
+
 function wireActions() {
+  refreshUndoButton();
+  document.querySelector("[data-undo-check]")?.addEventListener("click", () => {
+    let restored = null;
+    try {
+      restored = undoLastCheck();
+    } catch {
+      restored = null;
+    }
+    showToast(restored ? `« ${restored.name} » restauré` : "Rien à annuler");
+    refreshUndoButton();
+  });
   document.querySelector("[data-clear-checked]")?.addEventListener("click", () => {
     let removed = [];
     try {
@@ -564,6 +590,7 @@ async function boot() {
   subscribe(() => {
     renderEssentials();
     renderHistory();
+    refreshUndoButton();
   });
 }
 

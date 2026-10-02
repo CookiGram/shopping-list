@@ -25,6 +25,8 @@ import {
   removeItem,
   clearChecked,
   clearAll,
+  canUndoCheck,
+  undoLastCheck,
   getFrequency,
   topFrequent,
   favoriteKey,
@@ -259,4 +261,60 @@ test("Node runtime: events + subscribe are safe no-ops", () => {
 test("writeStoreKey/readStoreKey round-trip", () => {
   writeStoreKey("k", { a: [1, 2] });
   assert.deepEqual(readStoreKey("k", null), { a: [1, 2] });
+});
+
+test("undo stack: empty by default, null undo (issue #6)", () => {
+  assert.equal(canUndoCheck(), false);
+  assert.equal(undoLastCheck(), null);
+});
+
+test("undo stack: strict LIFO restore (issue #6)", () => {
+  const sel = addItem({ name: "Sel" });
+  const beurre = addItem({ name: "Beurre" });
+  const pates = addItem({ name: "Pâtes" });
+  toggleItem(sel.id);
+  toggleItem(beurre.id);
+  toggleItem(pates.id);
+  assert.equal(canUndoCheck(), true);
+  assert.equal(undoLastCheck().id, pates.id);
+  assert.equal(getItem(pates.id).checked, false);
+  assert.equal(undoLastCheck().id, beurre.id);
+  assert.equal(undoLastCheck().id, sel.id);
+  assert.equal(canUndoCheck(), false);
+  assert.equal(undoLastCheck(), null);
+});
+
+test("undo stack: manual uncheck prunes the candidate (issue #6)", () => {
+  const sel = addItem({ name: "Sel" });
+  const beurre = addItem({ name: "Beurre" });
+  toggleItem(sel.id);
+  toggleItem(beurre.id);
+  toggleItem(beurre.id); // manual restore in "Plus nécessaire"
+  assert.equal(canUndoCheck(), true);
+  assert.equal(undoLastCheck().id, sel.id);
+  assert.equal(canUndoCheck(), false);
+});
+
+test("undo stack: no-op transitions never push (issue #6)", () => {
+  const sel = addItem({ name: "Sel" });
+  setChecked(sel.id, false); // already unchecked: no transition
+  assert.equal(canUndoCheck(), false);
+  setChecked(sel.id, true);
+  setChecked(sel.id, true); // already checked: no duplicate
+  assert.equal(undoLastCheck().id, sel.id);
+  assert.equal(canUndoCheck(), false);
+});
+
+test("undo stack: deleted items are skipped, clearChecked prunes (issue #6)", () => {
+  const sel = addItem({ name: "Sel" });
+  const beurre = addItem({ name: "Beurre" });
+  toggleItem(sel.id);
+  toggleItem(beurre.id);
+  removeItem(beurre.id);
+  assert.equal(undoLastCheck().id, sel.id);
+  const pates = addItem({ name: "Pâtes" });
+  toggleItem(pates.id);
+  clearChecked();
+  assert.equal(canUndoCheck(), false);
+  assert.equal(undoLastCheck(), null);
 });
