@@ -1277,38 +1277,6 @@
       ]
     },
     {
-      "id": "paper.aluminum-foil",
-      "label": "Papier aluminium",
-      "aliases": [
-        "aluminium ménager",
-        "rouleau aluminium",
-        "feuille alu"
-      ],
-      "category": "paper",
-      "icon": "aluminum-foil",
-      "default_unit": "roll",
-      "tags": [
-        "cuisine",
-        "emballage"
-      ]
-    },
-    {
-      "id": "paper.baking-paper",
-      "label": "Papier cuisson",
-      "aliases": [
-        "papier sulfurisé",
-        "feuilles de cuisson",
-        "rouleau papier cuisson"
-      ],
-      "category": "paper",
-      "icon": "baking-paper",
-      "default_unit": "roll",
-      "tags": [
-        "cuisine",
-        "emballage"
-      ]
-    },
-    {
       "id": "paper.coffee-filters",
       "label": "Filtres à café",
       "aliases": [

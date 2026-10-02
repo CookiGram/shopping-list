@@ -9,6 +9,11 @@ import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dictPath = join(here, "..", "data", "dictionary", "non-food.fr.json");
+const catalogPath = join(here, "..", "data", "cookigram-catalog.json");
+
+/** Lowercase, trim, strip diacritics: the comparison basis for search terms. */
+const normalizeTerm = (s) =>
+  String(s).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 const ALLOWED_UNITS = new Set(["unit", "pack", "box", "bag", "bottle", "roll"]);
 const CANONICAL_CATEGORIES = [
@@ -59,13 +64,17 @@ test("non-food dictionary: canonical categories match specification", async () =
   }
 });
 
-test("non-food dictionary: items count is within realistic target (~100 entries)", async () => {
+test("non-food dictionary: volume invariant (non-empty, no accidental mass loss, no ceiling)", async () => {
   const data = JSON.parse(await readFile(dictPath, "utf8"));
+  // Durable invariant: the dictionary must stay usable (non-empty) and a floor
+  // guards against accidentally losing a large part of the dataset. There is
+  // deliberately NO upper bound: the contribution guide allows new entries, so
+  // a legitimate 99th, 100th or 101st entry must never fail the gate.
+  assert.ok(data.items.length > 0, "Dictionary must not be empty");
   assert.ok(
-    data.items.length >= 90 && data.items.length <= 110,
-    `Items count ${data.items.length} should be between 90 and 110`,
+    data.items.length >= 50,
+    `Items count ${data.items.length} is below the safety floor (50): possible accidental data loss`,
   );
-  assert.equal(data.items.length, 100, "Items count is exactly 100");
 });
 
 test("non-food dictionary: every item satisfies structural contracts", async () => {
@@ -120,9 +129,10 @@ test("non-food dictionary: every item satisfies structural contracts", async () 
       aliasSet.add(alias.toLowerCase());
     }
 
-    // Tags contract
+    // Tags contract: 1 to 3 tags (schema §3). Single-tag entries are legitimate.
     assert.ok(Array.isArray(item.tags), `Tags must be an array for ${context}`);
-    assert.ok(item.tags.length > 0, `Tags must not be empty for ${context}`);
+    assert.ok(item.tags.length >= 1 && item.tags.length <= 3,
+      `Tags count ${item.tags.length} must be between 1 and 3 for ${context}`);
     const tagSet = new Set();
     for (const tag of item.tags) {
       assert.ok(typeof tag === "string" && tag.trim().length > 0, `Empty tag in ${context}`);
@@ -216,9 +226,10 @@ test("non-food dictionary: user-facing labels, categories and tags are in French
     "sponges", "gloves", "bleach", "litter", "diapers", "razors"
   ]);
 
-  // English technical category keys must not be used as tags
+  // English technical category keys must not be used as tags.
+  // Covers all 7 canonical category keys.
   const FORBIDDEN_ENGLISH_TAGS = new Set([
-    "cleaning", "household", "pets", "health", "baby", "paper"
+    "cleaning", "hygiene", "paper", "household", "pets", "health", "baby"
   ]);
 
   // Raw English phrases forbidden in aliases
@@ -322,3 +333,49 @@ test("non-food dictionary: forbidden distinct-intention aliases do not re-appear
   }
 });
 
+
+test("non-food dictionary: no duplicate of CookiGram-owned culinary consumables", async () => {
+  // Contract (docs/catalog-api.md § Data quality): culinary-adjacent consumables
+  // already owned by CookiGram must NOT be duplicated in the household/non-food
+  // dictionary. This gate reads the live catalog snapshot so it stays pinned to
+  // the real source of truth instead of a hardcoded copy of its terms.
+  const COOKIGRAM_OWNED_SLUGS = ["papier-aluminium", "papier-sulfurise"];
+  const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+  const ownedTerms = new Set();
+  for (const slug of COOKIGRAM_OWNED_SLUGS) {
+    const entry = catalog.ingredients[catalog.bySlug[slug]];
+    assert.ok(entry, `CookiGram catalog must still own "${slug}" for this gate to be meaningful`);
+    ownedTerms.add(normalizeTerm(entry.name));
+    for (const alias of entry.aliases || []) ownedTerms.add(normalizeTerm(alias));
+  }
+
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const removedIds = new Set(["paper.aluminum-foil", "paper.baking-paper"]);
+  for (const item of data.items) {
+    assert.ok(!removedIds.has(item.id), `Item ${item.id} duplicates a CookiGram-owned consumable`);
+    for (const term of [item.label, ...item.aliases]) {
+      assert.ok(
+        !ownedTerms.has(normalizeTerm(term)),
+        `Item ${item.id} reintroduces CookiGram-owned term "${term}" (label or alias)`,
+      );
+    }
+  }
+});
+
+test("non-food dictionary: normalized label+alias terms never collide across intentions", async () => {
+  // Each distinct purchase intention must own its search terms: the same
+  // normalized term (label or alias) must not resolve to two different items.
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const ownerByTerm = new Map();
+  for (const item of data.items) {
+    for (const term of [item.label, ...item.aliases]) {
+      const key = normalizeTerm(term);
+      if (!ownerByTerm.has(key)) ownerByTerm.set(key, item.id);
+      assert.equal(
+        ownerByTerm.get(key),
+        item.id,
+        `Normalized term "${term}" claimed by two intentions: ${ownerByTerm.get(key)} and ${item.id}`,
+      );
+    }
+  }
+});

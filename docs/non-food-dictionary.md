@@ -4,6 +4,27 @@ Ce document décrit le dictionnaire de produits non alimentaires de **Shopping L
 
 ---
 
+## 0. Ownership éditorial vs runtime (contrat figé)
+
+Deux sources de vocabulaire non-food coexistent temporairement pendant la migration.
+Elles ne sont **pas** deux sources canoniques concurrentes :
+
+| Source | Statut contractuel |
+|---|---|
+| `data/dictionary/non-food.fr.json` | **Source canonique éditoriale du vocabulaire non-food à terme.** C'est ici que les nouvelles intentions d'achat non culinaires sont ajoutées et auditées (§4). |
+| `data/shopping-dict.json` | **Artefact runtime legacy v0, temporaire.** Conservé tel quel jusqu'à une future lane d'intégration/migration. Ne pas y ajouter de nouvelles entrées non-food : elles appartiennent au dictionnaire canonique. |
+
+**Périmètre explicite :** cette lane ne modifie pas `js/catalog.js` et ne branche pas
+encore le nouveau dictionnaire au runtime. Le runtime continue de lire
+`data/shopping-dict.json` uniquement.
+
+Une future lane d'intégration devra soit adapter le schéma canonique
+(`id` namespacé, `icon` clé sémantique, `default_unit`, `tags`) vers le contrat
+runtime actuel (`slug`, `name`, `icon` nom de fichier, `aisle`), soit remplacer
+proprement l'ancien contrat. Cette migration est hors scope ici.
+
+---
+
 ## 1. Rôle du dictionnaire
 
 Shopping List est une PWA autonome dédiée à la gestion de listes de courses quotidiennes. Alors que le catalogue culinaire de CookiGram est strictement axé sur la cuisine et les recettes (ingrédients bruts, épices, produits frais), le dictionnaire non culinaire de Shopping List couvre l'ensemble des besoins domestiques et familiaux :
@@ -121,7 +142,7 @@ Pour ajouter un produit non culinaire :
 6. **Choisir l'unité par défaut :**
    - Une valeur parmi `unit`, `pack`, `box`, `bag`, `bottle`, `roll`.
 7. **Ajouter les tags :**
-   - 2 à 3 mots-clés simples en minuscules (ex. `["feu", "cuisine"]`).
+   - 1 à 3 mots-clés simples en minuscules (ex. `["feu", "cuisine"]`), conformément au contrat du schéma (§3). Les entrées à 1 seul tag sont légitimes : ne pas les remplir artificiellement.
 8. **Placer l'entrée dans le fichier :**
    - Insérer l'item dans `items` en conservant le tri déterministe alphabétique par `id`.
 9. **Exécuter les tests :**
@@ -148,7 +169,7 @@ L'ajout d'une nouvelle catégorie doit rester exceptionnel afin d'éviter la sur
 
 ## 6. Contrat des icônes et gestion des clés non encore couvertes
 
-Les entrées du dictionnaire stockent des **clés sémantiques stables sans extension** (ex. `laundry-detergent`, `toilet-paper`, `cat-litter`), et non des chemins de fichiers.
+Les entrées du dictionnaire stockent des **clés sémantiques stables sans extension** (ex. `laundry-detergent`, `toilet-paper`, `cat-litter`), et non des chemins de fichiers. C'est le bon modèle : le dictionnaire ne lie pas ses entrées au format de stockage (`.svg`, sprite, police d'icônes).
 
 ### Distinction contrat de données vs contrat runtime
 
@@ -159,8 +180,9 @@ Les entrées du dictionnaire stockent des **clés sémantiques stables sans exte
    - Le runtime actuel de Shopping List (`js/list.js`) résout les icônes en concaténant directement `./assets/icons/` avec la valeur du champ `icon` (qui contient déjà `.svg` dans le snapshot culinaire CookiGram).
    - Lors de la future intégration du dictionnaire non culinaire dans le runtime (`js/catalog.js`), l'adaptateur de catalogue devra assurer la résolution de cette clé vers le fichier d'asset concret (typiquement `./assets/icons/${item.icon}.svg`).
 3. **Comportement de repli gracieux (fallback) :**
-   - À l'heure actuelle, les 97 clés d'icônes uniques de ce dictionnaire n'ont **aucun asset SVG correspondant** dans `assets/icons/` (les 174 fichiers SVG présents correspondent exclusivement aux ingrédients culinaires vendorisés).
-   - Tant qu'un asset SVG n'est pas fourni, le runtime utilise son mécanisme de fallback gracieux sous forme de pastille neutre. Aucune exception ou erreur bloquante n'est levée.
+   - À l'heure actuelle, les 95 clés d'icônes uniques de ce dictionnaire n'ont **aucun asset SVG correspondant** dans `assets/icons/` (les 174 fichiers SVG présents correspondent exclusivement aux ingrédients culinaires vendorisés).
+   - Tant qu'un asset SVG n'est pas fourni, le composant UI existant retombe sur son fallback vérifié : `ingredientIcon()` (`js/components.js`) écoute l'erreur de chargement (`error`, `{ once: true }`) et remplace l'image par le span vide de repli (`shopping-item-icon--fallback`). Aucune exception ou blocage n'est levé.
+4. **Périmètre de cette lane :** ni `js/list.js`, ni `js/components.js`, ni `js/catalog.js` ne sont modifiés ici pour implémenter la résolution `<key> → <key>.svg`. La production des assets vectoriels reste l'objet d'une lane graphique dédiée, non démarrée ici.
 
 ### Pipeline de production d'icônes (lane ultérieure)
 Lorsqu'un lot d'icônes vectorielles non alimentaires sera produit :
