@@ -13,6 +13,9 @@ import {
   DEMOTE_ON_LIST,
   MAX_SUGGESTIONS,
   MAX_TAG_ROWS,
+  RANK_TIER,
+  levenshtein,
+  fuzzyThreshold,
   indexSearchIngredient,
   buildIngredientIndex,
   tagVocabulary,
@@ -157,8 +160,8 @@ test("scoreSearchMatch: boosts never resurrect a non-match; score never negative
   assert.equal(miss.score, 0);
   assert.deepEqual(miss.boosts, { favorite: 0, staple: 0, history: 0, onList: 0 });
   // Heavy demotion clamps at 0, not below.
-  const aliased = indexSearchIngredient({ slug: "c", name: "Ccc", aliases: ["ccc"], category: "zzz-cat" });
-  const demoted = scoreSearchMatch(aliased, "zzz-cat", [], { onList: ["c"] });
+  const aliased = indexSearchIngredient({ slug: "c", name: "Ccc", aliases: ["ccc"], category: "zzzcat" });
+  const demoted = scoreSearchMatch(aliased, "zzzcat", [], { onList: ["c"] });
   // category exact 10 - 12 demote → clamped 0
   assert.equal(demoted.score, 0);
   assert.equal(demoted.onList, true);
@@ -280,7 +283,7 @@ test("buildSuggestions: blank → [], free-add always appended", () => {
   assert.ok(noFree.every((r) => r.kind !== "free-add"));
 });
 
-test("buildSuggestions: maxItems cap, tags-first capped at MAX_TAG_ROWS while items match", () => {
+test("buildSuggestions: maxItems cap, tags capped at MAX_TAG_ROWS and ordered after items", () => {
   assert.equal(MAX_SUGGESTIONS, 8);
   assert.equal(MAX_TAG_ROWS, 3);
   // One-char fragment matching several tags + items: tags capped at 3.
@@ -296,6 +299,10 @@ test("buildSuggestions: maxItems cap, tags-first capped at MAX_TAG_ROWS while it
   assert.ok(tags.length <= MAX_TAG_ROWS);
   const catalogRows = rows.filter((r) => r.kind !== "free-add");
   assert.ok(catalogRows.length <= 8);
+  // Tier order: every item row precedes every tag row.
+  const firstTag = catalogRows.findIndex((r) => r.kind === "tag");
+  const lastItem = catalogRows.map((r) => r.kind).lastIndexOf("item");
+  assert.ok(firstTag === -1 || lastItem === -1 || lastItem < firstTag);
   // No item matches → tags may fill all rows.
   const tagOnly = buildSuggestions(entries.slice(0, 4), "cui", { maxItems: 8 });
   assert.ok(tagOnly.some((r) => r.kind === "tag"));
@@ -309,4 +316,87 @@ test("buildSuggestions: active tags excluded, single-char tags ignored", () => {
     "a",
   );
   assert.ok(single.filter((r) => r.kind === "tag").length === 0);
+});
+
+test("normalizeText folds separators (issue #3)", () => {
+  assert.equal(normalizeText("Petit-déjeuner"), "petit dejeuner");
+  assert.equal(normalizeText("sel_fin/gros"), "sel fin gros");
+  assert.deepEqual(tokenize("sel-fin"), ["sel", "fin"]);
+});
+
+test("levenshtein + fuzzyThreshold budgets (issue #3)", () => {
+  assert.equal(levenshtein("", ""), 0);
+  assert.equal(levenshtein("sel", "sel"), 0);
+  assert.equal(levenshtein("beure", "beurre"), 1);
+  assert.equal(levenshtein("kitten", "sitting"), 3);
+  assert.equal(fuzzyThreshold("sel"), 1);
+  assert.equal(fuzzyThreshold("beure"), 2);
+});
+
+test("issue #3: 'sel' ranks Sel first across all tiers, tag never ahead", () => {
+  const entries = [
+    { kind: "culinary", entry: { slug: "sel", name: "Sel", aliases: ["sel"], category: "Épicerie salée" } },
+    { kind: "culinary", entry: { slug: "gros-sel", name: "Gros sel", aliases: ["gros sel"], category: "Épicerie salée" } },
+    { kind: "culinary", entry: { slug: "cassel", name: "Cassel", aliases: ["cassel"], category: "Divers" } },
+    { kind: "culinary", entry: { slug: "nacl", name: "Chlorure de sodium", aliases: ["sel de table"], category: "Divers" } },
+    { kind: "household", entry: { slug: "lessive", name: "Lessive", aliases: ["lessive"], category: "Entretien", tags: ["vaisselle"] } },
+  ];
+  const rows = buildSuggestions(entries, "sel", { maxItems: 8 });
+  const kinds = rows.map((r) => (r.kind === "item" ? r.slug : r.kind));
+  // Exact → word-exact → contains → alias → tag → free-add last.
+  assert.deepEqual(kinds, ["sel", "gros-sel", "cassel", "nacl", "tag", "free-add"]);
+  assert.equal(rows[0].tier, RANK_TIER.EXACT_NAME);
+  assert.equal(rows[1].tier, RANK_TIER.WORD_OR_PREFIX);
+  assert.equal(rows[2].tier, RANK_TIER.NAME_CONTAINS);
+  assert.equal(rows[3].tier, RANK_TIER.ALIAS);
+  assert.equal(rows[4].tier, RANK_TIER.TAG);
+  assert.equal(rows[4].tag, "vaisselle");
+  assert.equal(rows.at(-1).label, "sel");
+});
+
+test("issue #3: tier dominates boosted scores; boosts stay within tier", () => {
+  const entries = [
+    { kind: "culinary", entry: { slug: "sel", name: "Sel", aliases: ["sel"], category: "Épicerie salée" } },
+    { kind: "culinary", entry: { slug: "cassel", name: "Cassel", aliases: ["cassel"], category: "Divers" } },
+  ];
+  // Favorited tier-2 entry (25 + 8 = 33) still loses to tier-0 exact name.
+  const rows = buildSuggestions(entries, "sel", { favorites: ["cassel"] });
+  assert.equal(rows[0].slug, "sel");
+  // Same tier → higher score wins.
+  const both = buildSuggestions(
+    [
+      { kind: "culinary", entry: { slug: "sel", name: "Sel", aliases: ["sel"], category: "C" } },
+      { kind: "culinary", entry: { slug: "sel2", name: "Sel", aliases: ["sel"], category: "C" } },
+    ],
+    "sel",
+    { favorites: ["sel2"] },
+  );
+  assert.equal(both[0].slug, "sel2");
+});
+
+test("issue #3: fuzzy below alias, above tags", () => {
+  const entries = [
+    { kind: "culinary", entry: { slug: "beurre", name: "Beurre", aliases: ["beurre"], category: "Crémerie" } },
+    { kind: "household", entry: { slug: "x", name: "Xyz", aliases: ["beure doux"], category: "C", tags: ["beure-sale"] } },
+  ];
+  const rows = buildSuggestions(entries, "beure", { maxItems: 8 });
+  const kinds = rows
+    .filter((r) => r.kind !== "free-add")
+    .map((r) => (r.kind === "item" ? r.slug : `tag:${r.tag}`));
+  // Alias-exact (tier 3) beats name-fuzzy (tier 5); fuzzy beats tag (tier 6).
+  assert.deepEqual(kinds, ["x", "beurre", "tag:beure-sale"]);
+  assert.equal(rows[1].tier, RANK_TIER.FUZZY);
+});
+
+test("issue #3: leading '#' prioritizes tags, items still listed", () => {
+  const entries = [
+    { kind: "culinary", entry: { slug: "sel", name: "Sel", aliases: ["sel"], category: "Épicerie salée" } },
+    { kind: "household", entry: { slug: "lessive", name: "Lessive", aliases: ["lessive"], category: "Entretien", tags: ["vaisselle"] } },
+  ];
+  const rows = buildSuggestions(entries, "#sel");
+  assert.equal(rows[0].kind, "tag");
+  assert.equal(rows[0].tag, "vaisselle");
+  assert.ok(rows.some((r) => r.kind === "item" && r.slug === "sel"));
+  assert.equal(rows.at(-1).kind, "free-add");
+  assert.equal(rows.at(-1).label, "sel");
 });
