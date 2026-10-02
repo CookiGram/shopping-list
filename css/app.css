@@ -69,18 +69,6 @@ body {
   border-radius:var(--radius-sm);
 }
 
-.brand-count {
-  margin-left:auto;
-  font-size:.9rem;
-  color:var(--muted);
-  background:var(--cream);
-  border-radius:var(--radius-full);
-  padding:var(--space-1) var(--space-3);
-  min-height:44px;
-  display:inline-flex;
-  align-items:center;
-}
-
 main {
   display:flex;
   flex-direction:column;

@@ -334,8 +334,7 @@ function appendStateSection(container, kind, groups, rowOptions, titled) {
  * groups with no redundant title.
  * Options: {filter, query(for the filtered-empty message), iconBase,
  *           isFavorite: (item) => bool (default: item.favorite),
- *           isEssential: (item) => bool (default: item.essential),
- *           count: true|false|Element|selector (default true → "#count")}.
+ *           isEssential: (item) => bool (default: item.essential)}.
  */
 export function renderList(container, items, catalog, options = {}) {
   const {
@@ -344,7 +343,6 @@ export function renderList(container, items, catalog, options = {}) {
     iconBase = DEFAULT_ICON_BASE,
     isFavorite = (item) => !!item?.favorite,
     isEssential = (item) => !!item?.essential,
-    count = true,
   } = options;
   const list = items ?? [];
   const { active, checked } = splitByChecked(list);
@@ -359,25 +357,11 @@ export function renderList(container, items, catalog, options = {}) {
     appendStateSection(container, "active", activeGroups, rowOptions, titled);
     appendStateSection(container, "checked", checkedGroups, rowOptions, titled);
   }
-  updateCount(count, list);
   activateTags(container);
   const rendered =
     activeGroups.reduce((n, [, rows]) => n + rows.length, 0) +
     checkedGroups.reduce((n, [, rows]) => n + rows.length, 0);
   return { rendered, total: list.length };
-}
-
-export function updateCount(target, items) {
-  if (target === false || typeof document === "undefined") return;
-  const node =
-    target === true || target === undefined
-      ? document.querySelector("#count")
-      : typeof target === "string"
-        ? document.querySelector(target)
-        : target;
-  if (!node) return;
-  const remaining = (items ?? []).filter((i) => !i.checked).length;
-  node.textContent = `${remaining} article${remaining > 1 ? "s" : ""}`;
 }
 
 // ---- events (delegated) ---------------------------------------------------
@@ -482,7 +466,7 @@ function activateTag(tag, id, btn, onTag) {
 
 /**
  * Mount a live list: initial render + store subscription + delegated events.
- * Options: {catalog, store, getItems, filter|getFilter, iconBase, count,
+ * Options: {catalog, store, getItems, filter|getFilter, iconBase,
  *           onToggleCheck, onToggleFavorite, onToggleEssential, onStepQty, onTag}.
  * Returns {unmount, refresh, setFilter, getCatalog}.
  */
@@ -492,7 +476,6 @@ export function mountList(container, options = {}) {
     store: explicitStore = null,
     getItems = null,
     iconBase = DEFAULT_ICON_BASE,
-    count = true,
     onToggleCheck = null,
     onToggleFavorite = null,
     onToggleEssential = null,
@@ -547,7 +530,6 @@ export function mountList(container, options = {}) {
     return renderList(container, lastItems, catalog, {
       filter,
       iconBase,
-      count,
       isFavorite: isFavoriteFor,
       isEssential: isEssentialFor,
     });
