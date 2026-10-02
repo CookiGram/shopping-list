@@ -92,6 +92,40 @@ export const createRitual = (candidates = []) => {
 };
 
 /**
+ * Build ritual candidates from USER-OWNED essentials (pure). Only
+ * essentials the user explicitly marked are proposed; the catalog
+ * never seeds this list. Drops slugless entries (only catalog-backed
+ * products can be re-proposed), slugs already on the current list,
+ * and slugs already decided in the current trip (`decidedSlugs`).
+ *
+ * Deliberately trip-scoped: no cooldown memory is consulted, so every
+ * essential the user kept is proposed again on the next trip even when
+ * it was ignored or rejected during the previous one. Ignoring a
+ * proposal never removes the essential itself.
+ *
+ * `essentials` accepts the `store.getEssentials()` shape
+ * ([{key, slug|null, name}]) or plain [{slug, name}]. Returns clean
+ * [{slug, name}] copies.
+ */
+export const userEssentialCandidates = (
+  essentials = [],
+  { onListSlugs = [], decidedSlugs = [] } = {},
+) => {
+  const decided = new Set((decidedSlugs ?? []).map((slug) => String(slug)));
+  const withSlug = (essentials ?? [])
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+      const slug = String(raw.slug ?? "").trim();
+      if (!slug) return null;
+      const name = String(raw.name ?? slug).trim() || slug;
+      return { slug, name };
+    })
+    .filter(Boolean)
+    .filter((candidate) => !decided.has(candidate.slug));
+  return filterCandidates(withSlug, { onListSlugs, recentDecisions: {} });
+};
+
+/**
  * Pre-filter ritual candidates (pure):
  * - drop slugs already on the current list (`onListSlugs`),
  * - drop slugs rejected within `cooldownMs` (`recentDecisions` has the

@@ -32,7 +32,7 @@ export function ingredientIcon(iconPath, name) {
 }
 
 /** Single-bucket shopping row: [checkbox] [icon] [name + qty] [heart]. */
-export function checkboxRow({ id, name, qty = "", icon = "", checked = false, favorite = false }) {
+export function checkboxRow({ id, name, qty = "", icon = "", checked = false, favorite = false, essential = null }) {
   const li = el("li", "shopping-item" + (checked ? " shopping-item--checked" : ""), {
     "data-shopping-item": id,
   });
@@ -58,6 +58,9 @@ export function checkboxRow({ id, name, qty = "", icon = "", checked = false, fa
   }
 
   row.append(cb, iconEl, copy, heartButton(id, favorite));
+  // essential === null hides the pin (slugless custom items cannot be
+  // re-proposed, so they cannot be marked as essentials).
+  if (essential !== null) row.appendChild(essentialButton(id, essential));
   li.appendChild(row);
   return li;
 }
@@ -112,6 +115,19 @@ export function essentialChip(slug, name, active = false) {
   chip.append(plus, document.createTextNode(name));
   li.appendChild(chip);
   return li;
+}
+
+/** Pin (essential) toggle — visual only; pressed state set by caller. */
+export function essentialButton(id, pressed = false) {
+  const btn = el("button", "icon-btn", {
+    type: "button",
+    "data-essential-toggle": id,
+    "aria-pressed": pressed ? "true" : "false",
+    "aria-label": pressed ? "Retirer des essentiels" : "Marquer comme essentiel",
+    title: pressed ? "Retirer des essentiels" : "Marquer comme essentiel",
+  });
+  btn.textContent = "📌";
+  return btn;
 }
 
 /** Heart (favorite) toggle — visual only; pressed state set by caller. */

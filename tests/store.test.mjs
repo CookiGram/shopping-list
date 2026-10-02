@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 test("constants contract", () => {
-  assert.deepEqual(Object.keys(STORE_KEYS).sort(), ["favorites", "frequency", "history", "items", "prefs", "staples"]);
+  assert.deepEqual(Object.keys(STORE_KEYS).sort(), ["essentials", "favorites", "frequency", "history", "items", "prefs", "staples"]);
   assert.equal(CHANGE_EVENT, "shopping-list:change");
   assert.deepEqual([...PROVENANCE_SOURCES], ["cookigram", "dict", "custom"]);
   assert.deepEqual([...STAPLE_DECISIONS], ["added", "rejected", "ignored"]);

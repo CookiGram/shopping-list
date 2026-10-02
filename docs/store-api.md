@@ -23,7 +23,8 @@ suffixed keys). Values are JSON.
 | --- | ----- |
 | `shopping-list:items:v1` | Array of items (insertion order) |
 | `shopping-list:favorites:v1` | Array of `{key, slug\|null, name, addedAt}` |
-| `shopping-list:staples:v1` | Map `{slug: {decision, at}}` (decisions only) |
+| `shopping-list:essentials:v1` | Array of `{key, slug\|null, name, addedAt}` (user-marked only, never seeded) |
+| `shopping-list:staples:v1` | Map `{slug: {decision, at}}` (decisions only; legacy ritual memory, preserved but no longer consulted) |
 | `shopping-list:history:v1` | Array of sessions, oldest first (capped at 20) |
 | `shopping-list:prefs:v1` | Prefs object over `DEFAULT_PREFS` |
 | `shopping-list:frequency:v1` | Map `{normalizedName: {name, slug, count, lastUsedAt}}` (capped at 300 keys) |
@@ -102,6 +103,18 @@ Favorites (heart toggles):
   *after* the toggle). Throws when both are blank.
 - `clearFavorites()` → number removed.
 
+Essentials (pin toggles; proposed on every new trip):
+
+- `essentialKey({slug?, name})` → slug, else `name:<normalized>`.
+- `getEssentials()` → essentials in add order (copies). Fresh
+  installs return `[]`: the catalog never seeds this list.
+- `isEssential({slug?, name})` → bool.
+- `toggleEssential({slug?, name})` → `{essential, key}` (state
+  *after* the toggle). Throws when both are blank.
+- `clearEssentials()` → number removed.
+- Favorites and essentials are independent: marking one never
+  touches the other, and no migration converts between them.
+
 Staple-ritual memory (see `staples.js` below):
 
 - `noteStapleDecision(slug, "added"|"rejected"|"ignored")`.
@@ -131,6 +144,8 @@ Prefs:
 | `items:clear` | `{count}` |
 | `favorites:toggle` | `{key, favorite}` |
 | `favorites:clear` | `{count}` |
+| `essentials:toggle` | `{key, essential}` |
+| `essentials:clear` | `{count}` |
 | `staples:decision` | `{key, decision}` |
 | `staples:clear` | `{count}` |
 | `history:close` | `{id, count}` |
@@ -170,23 +185,28 @@ count}`.
 ## `js/staples.js` API (ephemeral ritual)
 
 The ritual is NEVER a second permanent list: state lives in
-memory only. The app lane resolves candidates (catalog
-`staple: true` flags → `{slug, name}`), runs the ritual, turns
-`validate()` results into `store.addItem` calls, and persists
-`decisions()` via `store.noteStapleDecision()` at the end.
+memory only. The app lane resolves candidates from USER-OWNED
+essentials (`userEssentialCandidates(getEssentials(), …)`),
+runs the ritual, and turns `validate()` results into
+`store.addItem` calls. The ritual is trip-scoped: per-trip
+verdicts are kept in memory only (cleared when the trip closes),
+so every kept essential is proposed again on the next trip.
+Ignoring or rejecting a proposal never removes the essential.
+Legacy `noteStapleDecision()` memory is preserved in storage but
+no longer consulted by the essentials ritual.
 
 ```js
-import { createRitual, filterCandidates } from "./staples.js";
+import { createRitual, userEssentialCandidates } from "./staples.js";
 
-const ritual = createRitual(filterCandidates(staples, {
+const ritual = createRitual(userEssentialCandidates(getEssentials(), {
   onListSlugs: getItems().map((i) => i.slug).filter(Boolean),
-  recentDecisions: getStapleDecisions(),
+  decidedSlugs: [...tripDecided], // memory-only trip verdicts
 }));
 ritual.pending();        // [{slug, name}] still undecided
 ritual.validate("farine"); // → candidate (caller: addItem it)
 ritual.reject("kirsch");   // → true
 ritual.ignoreRest();       // → remaining; ends the ritual
-ritual.decisions();        // [{slug, name, decision}] for noteStapleDecision
+ritual.decisions();        // [{slug, name, decision}] incl. ignored
 ritual.isDone();           // true when nothing is pending
 ```
 

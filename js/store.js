@@ -14,6 +14,7 @@ export const STORE_KEYS = Object.freeze({
   items: "shopping-list:items:v1",
   favorites: "shopping-list:favorites:v1",
   staples: "shopping-list:staples:v1",
+  essentials: "shopping-list:essentials:v1",
   history: "shopping-list:history:v1",
   prefs: "shopping-list:prefs:v1",
   frequency: "shopping-list:frequency:v1",
@@ -470,6 +471,72 @@ export const clearFavorites = () => {
   const count = readFavorites().length;
   writeStoreKey(STORE_KEYS.favorites, []);
   emitStoreChange("favorites:clear", { count });
+  return count;
+};
+
+/* ------------------------------------------------------------------ */
+/* Essentials (user-owned; proposed on each new trip)                    */
+/*                                                     [{key, slug|null, name, addedAt}] */
+/* ------------------------------------------------------------------ */
+
+/**
+ * User-owned essentials, independent from favorites. A favorite is a
+ * product the user buys often and wants to find easily; an essential
+ * is a product the user wants proposed on every new trip. The catalog
+ * never seeds this list: a fresh install starts with zero essentials.
+ * Shape and keying mirror favorites on purpose (see `toKeySet` in
+ * search.js, which accepts both shapes for ranking context).
+ */
+
+/** Stable essential key: the slug, else `name:<normalized>`. */
+export const essentialKey = ({ slug = null, name = "" } = {}) =>
+  (slug ? String(slug) : `name:${normalizeName(name)}`);
+
+const readEssentials = () => {
+  const raw = readStoreKey(STORE_KEYS.essentials, []);
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((ess) => ess && typeof ess.key === "string");
+};
+
+/** All essentials, in the order they were added (copies). */
+export const getEssentials = () => readEssentials().map((ess) => ({ ...ess }));
+
+/** True when `{slug?, name}` is an essential. */
+export const isEssential = (ref) => readEssentials().some((ess) => ess.key === essentialKey(ref));
+
+/**
+ * Toggle an essential. Returns `{essential, key}` with the state *after*
+ * the toggle. Throws when both `slug` and `name` are blank.
+ */
+export const toggleEssential = ({ slug = null, name = "" } = {}) => {
+  const cleanName = String(name ?? "").trim();
+  if (!cleanName && !slug) throw new Error("store.toggleEssential: name or slug is required");
+  const key = essentialKey({ slug, name: cleanName });
+  const list = readEssentials();
+  const index = list.findIndex((ess) => ess.key === key);
+  let essential;
+  if (index === -1) {
+    list.push({
+      key,
+      slug: slug ? String(slug) : null,
+      name: cleanName || String(slug),
+      addedAt: Date.now(),
+    });
+    essential = true;
+  } else {
+    list.splice(index, 1);
+    essential = false;
+  }
+  writeStoreKey(STORE_KEYS.essentials, list);
+  emitStoreChange("essentials:toggle", { key, essential });
+  return { essential, key };
+};
+
+/** Delete all essentials. Returns the number removed. */
+export const clearEssentials = () => {
+  const count = readEssentials().length;
+  writeStoreKey(STORE_KEYS.essentials, []);
+  emitStoreChange("essentials:clear", { count });
   return count;
 };
 
