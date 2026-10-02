@@ -287,6 +287,23 @@ main {
   gap:var(--space-4);
 }
 
+.list-section {
+  display:grid;
+  gap:var(--space-3);
+}
+
+.list-section-title {
+  margin:0;
+  font-family:var(--font-serif);
+  font-size:.95rem;
+  font-weight:600;
+}
+
+.list-section--checked .list-section-title {
+  color:var(--ink-soft, var(--ink));
+  font-weight:500;
+}
+
 .shopping-group { padding:0; background:transparent; }
 
 .shopping-group h3 {
