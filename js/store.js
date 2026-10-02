@@ -54,12 +54,60 @@ const memoryAdapter = {
 
 let customStorage = null;
 
+/* ------------------------------------------------------------------ */
+/* Undo stack (issue #6): LIFO of ids that transitioned to checked.    */
+/* Session-scoped (memory only, cleared on reload and on              */
+/* configureStore). Not a general mutation history; no redo.           */
+/* ------------------------------------------------------------------ */
+
+const undoStack = [];
+
 /**
  * Test-only injection (mirrors the `fetchImpl` pattern of catalog.js).
  * Pass `{storage: null}` (or nothing) to restore the default backend.
  */
 export const configureStore = ({ storage } = {}) => {
   customStorage = storage ?? null;
+  undoStack.length = 0;
+};
+
+const pruneUndo = (id) => {
+  for (let i = undoStack.length - 1; i >= 0; i--) {
+    if (undoStack[i] === id) undoStack.splice(i, 1);
+  }
+};
+
+const recordCheckTransition = (id, wasChecked, isChecked) => {
+  if (!id || wasChecked === isChecked) return;
+  if (isChecked) {
+    pruneUndo(id);
+    undoStack.push(id);
+  } else {
+    pruneUndo(id);
+  }
+};
+
+/** True when at least one checked item can be restored by undo. */
+export const canUndoCheck = () => {
+  for (let i = undoStack.length - 1; i >= 0; i--) {
+    const item = getItem(undoStack[i]);
+    if (item && item.checked) return true;
+  }
+  return false;
+};
+
+/**
+ * Restore the most recently checked item (LIFO). Skips ids whose item
+ * is gone or already unchecked. Returns the restored item, or null.
+ */
+export const undoLastCheck = () => {
+  while (undoStack.length) {
+    const id = undoStack.pop();
+    const item = getItem(id);
+    if (!item || !item.checked) continue;
+    return setChecked(id, false);
+  }
+  return null;
 };
 
 const backend = () => {
@@ -227,6 +275,7 @@ export const addItem = ({ name, qty = "", slug = null, provenance } = {}) => {
     if (existing.checked) {
       existing.checked = false;
       writeStoreKey(STORE_KEYS.items, items);
+      recordCheckTransition(existing.id, true, false);
     }
     emitStoreChange("items:add", { id: existing.id, merged: true });
     return cloneItem(existing);
@@ -251,8 +300,10 @@ export const toggleItem = (id) => {
   const items = readItems();
   const found = items.find((item) => item.id === id);
   if (!found) return null;
+  const wasChecked = found.checked;
   found.checked = !found.checked;
   writeStoreKey(STORE_KEYS.items, items);
+  recordCheckTransition(id, wasChecked, found.checked);
   emitStoreChange("items:toggle", { id });
   return cloneItem(found);
 };
@@ -262,8 +313,10 @@ export const setChecked = (id, checked) => {
   const items = readItems();
   const found = items.find((item) => item.id === id);
   if (!found) return null;
+  const wasChecked = found.checked;
   found.checked = Boolean(checked);
   writeStoreKey(STORE_KEYS.items, items);
+  recordCheckTransition(id, wasChecked, found.checked);
   emitStoreChange("items:toggle", { id });
   return cloneItem(found);
 };
@@ -285,6 +338,7 @@ export const removeItem = (id) => {
   const kept = items.filter((item) => item.id !== id);
   if (kept.length === items.length) return false;
   writeStoreKey(STORE_KEYS.items, kept);
+  pruneUndo(id);
   emitStoreChange("items:remove", { id });
   return true;
 };
@@ -295,6 +349,7 @@ export const clearChecked = () => {
   const removed = items.filter((item) => item.checked);
   if (removed.length === 0) return [];
   writeStoreKey(STORE_KEYS.items, items.filter((item) => !item.checked));
+  for (const item of removed) pruneUndo(item.id);
   emitStoreChange("items:clear-checked", { count: removed.length });
   return removed.map(cloneItem);
 };

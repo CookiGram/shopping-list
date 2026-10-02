@@ -490,6 +490,21 @@ main {
   box-shadow:0 0 0 3px #e96f3a33;
 }
 
+.shopping-action--glyph {
+  font-size:1.5rem;
+  line-height:1;
+}
+
+.shopping-action:disabled {
+  opacity:.35;
+  cursor:default;
+}
+
+.shopping-action:disabled:hover {
+  transform:none;
+  box-shadow:none;
+}
+
 .shopping-action-icon {
   display:block;
   width:30px;
