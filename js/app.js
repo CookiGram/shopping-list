@@ -324,12 +324,14 @@ function wireVoice() {
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
+      if (voiceRecognition !== recognition) return;
       els.voice?.classList.add("is-listening");
       els.voice?.setAttribute("aria-pressed", "true");
       showToast("Je vous écoute…");
     };
 
     recognition.onresult = (event) => {
+      if (voiceRecognition !== recognition) return;
       const transcript = event?.results?.[0]?.[0]?.transcript?.trim?.() ?? "";
       const vocabulary = buildVoiceVocabulary(searchIndex);
       const parts = splitVoiceTranscript(transcript, vocabulary);
@@ -339,6 +341,7 @@ function wireVoice() {
     };
 
     recognition.onerror = (event) => {
+      if (voiceRecognition !== recognition) return;
       if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
         showToast("Autorisez le micro pour dicter");
       } else if (event?.error !== "aborted") {
@@ -348,8 +351,9 @@ function wireVoice() {
     };
 
     recognition.onend = () => {
+      if (voiceRecognition !== recognition) return;
       stopListeningState();
-      if (voiceRecognition === recognition) voiceRecognition = null;
+      voiceRecognition = null;
     };
 
     try {
