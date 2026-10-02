@@ -27,6 +27,11 @@ body {
   white-space:nowrap;
 }
 
+/* UX13: the UA [hidden]{display:none} loses against author display rules
+ * (e.g. .essentials{display:flex}), leaking empty section titles such as
+ * "Essentiels". Force it so a hidden section never renders. */
+[hidden] { display:none !important; }
+
 /* ---- Shell: narrow mobile column, centered on larger screens ---- */
 .shell {
   max-width:480px;
@@ -215,6 +220,18 @@ main {
   font-weight:600;
 }
 
+/* UX13: Essentiels / Récents stay discreet micro-labels — never a heavy
+ * document hierarchy competing with the list itself. */
+#essentials-title,
+#history-title {
+  font-family:var(--font-sans);
+  font-size:.8rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--muted);
+}
+
 .chip-row {
   display:flex;
   flex-wrap:wrap;
@@ -284,14 +301,6 @@ main {
 .ignore-rest:hover { color:var(--ink); }
 
 /* ---- Shopping list (CookiGram .shopping-* pattern) ---- */
-.list-head {
-  display:flex;
-  align-items:center;
-  gap:var(--space-2);
-}
-
-.list-head .section-title { margin-right:auto; }
-
 .shopping-list {
   display:grid;
   gap:var(--space-4);

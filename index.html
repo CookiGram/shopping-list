@@ -85,10 +85,9 @@
       </section>
 
       <!-- Lane mount: the shopping list, grouped by aisle (store/app lanes own rows) -->
-      <section aria-labelledby="list-title">
-        <div class="list-head">
-          <h2 class="section-title" id="list-title">Ma liste</h2>
-        </div>
+      <!-- UX13: no visible list title — the context is self-evident; the -->
+      <!-- section stays accessibly named via aria-label. -->
+      <section aria-label="Articles de la liste">
         <div class="shopping-list" id="list" data-shopping-list aria-live="polite">
           <div class="empty-state" data-empty-state>
             <p><strong>Votre liste est vide.</strong></p>
