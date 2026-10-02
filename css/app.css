@@ -200,12 +200,6 @@ main {
 /* ---- Essentials (pantry staples quick-add) ---- */
 .essentials { display:flex; flex-direction:column; gap:var(--space-2); }
 
-.essentials-hint {
-  margin:0;
-  font-size:.85rem;
-  color:var(--ink-soft, var(--ink));
-}
-
 .section-title {
   margin:0;
   font-family:var(--font-serif);

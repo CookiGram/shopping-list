@@ -112,13 +112,32 @@ test("UX21: barre d'actions homogène, sémantique inchangée", () => {
   }
 });
 
-test("UX21: zone Essentials allégée à une seule explication", () => {
-  const hints = [...appJs.matchAll(/data-essentials-hint/g)];
-  assert.ok(hints.length >= 1, "le hint Essentiels existe");
-  const text = appJs.match(/hint\.textContent\s*=\s*"([^"]+)"/);
-  assert.ok(text, "texte du hint défini une seule fois");
-  assert.ok(!text[1].includes("📌"), "le hint n'utilise plus l'emoji système");
-  assert.ok(text[1].length <= 90, `hint concis (une phrase) : ${text[1].length} caractères`);
+test("Essentiel binaire: aucun texte/hint explicatif dans la section", () => {
+  assert.ok(!appJs.includes("data-essentials-hint"), "aucun hook data-essentials-hint dans js/app.js");
+  assert.ok(!appJs.includes("essentials-hint"), "aucune classe essentials-hint dans js/app.js");
+  assert.ok(!css.includes("essentials-hint"), "aucune règle .essentials-hint dans css/app.css");
+  assert.ok(
+    !appJs.includes("retrouver à chaque nouvelle liste"),
+    "la phrase explicative a disparu de js/app.js",
+  );
+  assert.ok(!html.includes("retrouver à chaque nouvelle liste"), "phrase absente de index.html");
+});
+
+test("Essentiel binaire: même SVG dans les deux états, couleur par aria-pressed", () => {
+  const templates = [...componentsJs.matchAll(/class="essential-pin-icon"/g)];
+  assert.strictEqual(templates.length, 1, "un seul gabarit SVG de pin");
+  const fn = componentsJs.match(/export function essentialButton[\s\S]*?\n\}/);
+  assert.ok(fn, "essentialButton existe dans components.js");
+  assert.strictEqual(
+    [...fn[0].matchAll(/btn\.innerHTML\s*=/g)].length,
+    1,
+    "l'icône est assignée une seule fois, sans branchement sur pressed",
+  );
+  assert.ok(!/pressed\s*\?.*svg|svg.*pressed\s*\?/i.test(fn[0]), "aucune icône alternative selon pressed");
+  const off = css.match(/\.icon-btn\s*\{([^}]*)\}/);
+  assert.ok(off && /color\s*:\s*var\(--muted\)/.test(off[1]), "état off : neutre, comme les autres contrôles");
+  const on = css.match(/\.icon-btn\[aria-pressed="true"\]\s*\{([^}]*)\}/);
+  assert.ok(on && /color\s*:\s*var\(--orange\)/.test(on[1]), "état on : couleur d'accent via aria-pressed");
 });
 
 test("UX21: le badge #count n'est pas réintroduit", () => {
