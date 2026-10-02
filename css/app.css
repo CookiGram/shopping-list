@@ -32,35 +32,40 @@ body {
  * "Essentiels". Force it so a hidden section never renders. */
 [hidden] { display:none !important; }
 
-/* ---- Shell: narrow mobile column, centered on larger screens ---- */
+/* ---- Shell: list column docked to the CookiGram scale (UX14).
+ * Width/gutters mirror the CookiGram list cousin
+ * `static/selection/style.css` (.selection-page 900px / 24px 18px),
+ * not the 1120px card catalogue: same perceptual scale, scannable rows. */
 .shell {
-  max-width:480px;
+  max-width:900px;
   margin:0 auto;
   min-height:100dvh;
   display:flex;
   flex-direction:column;
-  padding:0 var(--space-4) var(--space-8);
+  padding:0 18px var(--space-8);
 }
 
 .topbar {
   display:flex;
   align-items:center;
   gap:var(--space-3);
-  padding:var(--space-4) 0 var(--space-3);
+  min-height:76px;
+  padding:var(--space-3) 0;
 }
 
 .brand {
   display:flex;
   align-items:center;
-  gap:var(--space-2);
+  gap:var(--space-3);
   font-family:var(--font-serif);
-  font-size:1.35rem;
-  letter-spacing:.01em;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-0.02em;
 }
 
 .brand-logo {
-  width:36px;
-  height:36px;
+  width:32px;
+  height:32px;
   border-radius:var(--radius-sm);
 }
 
@@ -79,7 +84,7 @@ body {
 main {
   display:flex;
   flex-direction:column;
-  gap:var(--space-4);
+  gap:18px;
   flex:1;
 }
 
@@ -303,7 +308,7 @@ main {
 /* ---- Shopping list (CookiGram .shopping-* pattern) ---- */
 .shopping-list {
   display:grid;
-  gap:var(--space-4);
+  gap:18px;
 }
 
 .list-section {
@@ -329,7 +334,7 @@ main {
   margin:0 0 var(--space-1);
   padding-bottom:var(--space-1);
   border-bottom:1px solid var(--line);
-  font-size:1rem;
+  font-size:1.02rem;
 }
 
 .shopping-group-items {
@@ -557,7 +562,7 @@ main {
 
 .actions-separator {
   width:1px;
-  height:30px;
+  height:34px;
   margin:0 2px;
   background:var(--line);
 }
@@ -659,8 +664,13 @@ main {
   * { transition:none !important; }
 }
 
-@media (max-width:360px) {
-  .shell { padding:0 var(--space-3) var(--space-6); }
+/* UX14: mobile rhythm mirrors CookiGram (≤600px: 12px gutters, 16px
+ * list gap, 1rem aisle titles, 46px actions). */
+@media (max-width:600px) {
+  .shell { padding:0 12px var(--space-6); }
+  main { gap:16px; }
+  .shopping-list { gap:16px; }
+  .shopping-group h3 { font-size:1rem; }
   .shopping-item-row { grid-template-columns:24px 28px minmax(0,1fr) auto; }
   .shopping-action { width:46px; height:46px; }
 }
