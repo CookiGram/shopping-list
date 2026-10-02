@@ -101,16 +101,48 @@ main {
   flex:1;
   min-width:0;
   border:0;
+  border-radius:0;
   background:transparent;
   font:inherit;
   font-size:1rem;
   color:var(--ink);
   padding:var(--space-3) 0;
+  -webkit-appearance:none;
+  appearance:none;
 }
 
 .search-input::placeholder { color:var(--muted); }
 
-.search-input:focus { outline:none; }
+/* Issue #29 : l'input interne ne dessine jamais son propre contour.
+ * La règle globale :focus-visible (étage a11y) lui ajoutait un anneau
+ * orange + radius, d'où le double contour et la ligne verticale après
+ * la loupe. Le seul indicateur de focus reste l'anneau :focus-within
+ * du wrapper (visible au clavier comme au touch). */
+.search-input:focus,
+.search-input:focus-visible {
+  outline:none;
+  border:0;
+  box-shadow:none;
+  border-radius:0;
+}
+
+/* Masque la croix/décorations natives du type=search (doublon du
+ * bouton .search-clear custom). type=search conservé pour le clavier
+ * mobile (touche « Rechercher »). */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration,
+.search-input::-webkit-search-results-button,
+.search-input::-webkit-search-results-decoration {
+  -webkit-appearance:none;
+  appearance:none;
+}
+
+/* Autofill : pas de bloc/contour interne dans la barre. */
+.search-input:-webkit-autofill {
+  -webkit-box-shadow:0 0 0 1000px var(--card) inset;
+  -webkit-text-fill-color:var(--ink);
+  caret-color:var(--ink);
+}
 
 .search-bar:focus-within {
   border-color:var(--orange);
