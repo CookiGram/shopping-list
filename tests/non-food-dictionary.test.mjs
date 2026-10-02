@@ -1,0 +1,423 @@
+/* Shopping List — Unit tests & validation for non-culinary dictionary.
+ * Runner: node --test tests/*.test.mjs (stdlib only, no deps).
+ */
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const dictPath = join(here, "..", "data", "dictionary", "non-food.fr.json");
+const catalogPath = join(here, "..", "data", "cookigram-catalog.json");
+
+/** Lowercase, trim, strip diacritics: the comparison basis for search terms. */
+const normalizeTerm = (s) =>
+  String(s).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const ALLOWED_UNITS = new Set(["unit", "pack", "box", "bag", "bottle", "roll"]);
+const CANONICAL_CATEGORIES = [
+  { id: "cleaning", label: "Entretien" },
+  { id: "hygiene", label: "Hygiène" },
+  { id: "paper", label: "Papier & consommables" },
+  { id: "household", label: "Maison" },
+  { id: "pets", label: "Animaux" },
+  { id: "health", label: "Santé courante" },
+  { id: "baby", label: "Bébé" },
+];
+
+const KNOWN_BRANDS = [
+  "ariel", "dash", "skip", "le chat", "persil", "cif", "paic", "fairy",
+  "canard wc", "harpic", "destop", "calgon", "ouator", "ajax", "carolin",
+  "colgate", "signal", "oral-b", "sensodyne", "parodontax", "sanogyl",
+  "head & shoulders", "pantene", "dop", "garnier", "l'oréal", "nivea",
+  "mon savon", "dove", "palmolive", "le petit marseillais", "tahiti",
+  "ushuaïa", "gillette", "wilkinson", "bic", "veet", "venus",
+  "pampers", "huggies", "mots d'enfants", "pommette", "mustela",
+  "tampax", "always", "nania", "brita", "tupperware",
+  "duracell", "energizer", "varta", "panasonic", "philips", "osram",
+  "whiskas", "felix", "sheba", "purina", "friskies", "royal canin", "pedigree", "frolic", "cesar",
+  "doliprane", "dafalgan", "efferalgan", "advil", "nurofen", "aspegic", "smecta", "imodium",
+  "sopalin", "velpeau", "kleenex", "scottex", "scotch", "pousse-mousse", "pousse mousse", "band-aid", "q-tips"
+];
+
+/** Split text into normalized word tokens (lowercase, diacritics stripped). */
+const tokenizeTerm = (s) =>
+  normalizeTerm(s).split(/[^a-z0-9]+/).filter(Boolean);
+
+// Pre-tokenized brand sequences, aligned with KNOWN_BRANDS by index.
+const BRAND_TOKEN_SEQS = KNOWN_BRANDS.map(tokenizeTerm);
+
+/**
+ * Return the first known brand found in `text` as contiguous whole tokens,
+ * or null. Word-boundary matching: "rasoir Bic" matches "bic" but
+ * "bicarbonate de soude" does not; "savon Le Chat" matches "le chat"
+ * but a lone generic "chat" does not.
+ */
+const findBrandInText = (text) => {
+  const tokens = tokenizeTerm(text);
+  for (let b = 0; b < KNOWN_BRANDS.length; b++) {
+    const seq = BRAND_TOKEN_SEQS[b];
+    if (seq.length === 0) continue;
+    for (let i = 0; i + seq.length <= tokens.length; i++) {
+      if (seq.every((tok, j) => tokens[i + j] === tok)) return KNOWN_BRANDS[b];
+    }
+  }
+  return null;
+};
+
+test("non-food dictionary: JSON is parseable and valid schema version/locale", async () => {
+  const content = await readFile(dictPath, "utf8");
+  assert.doesNotThrow(() => JSON.parse(content), "File should be valid JSON");
+
+  const data = JSON.parse(content);
+  assert.equal(data.version, 1, "version must be 1");
+  assert.equal(data.locale, "fr-FR", "locale must be fr-FR");
+  assert.ok(Array.isArray(data.categories), "categories must be an array");
+  assert.ok(Array.isArray(data.items), "items must be an array");
+});
+
+test("non-food dictionary: canonical categories match specification", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  assert.equal(data.categories.length, CANONICAL_CATEGORIES.length);
+
+  for (let i = 0; i < CANONICAL_CATEGORIES.length; i++) {
+    const expected = CANONICAL_CATEGORIES[i];
+    const actual = data.categories[i];
+    assert.equal(actual.id, expected.id, `Category id mismatch at index ${i}`);
+    assert.equal(actual.label, expected.label, `Category label mismatch at index ${i}`);
+  }
+});
+
+test("non-food dictionary: volume invariant (non-empty, no accidental mass loss, no ceiling)", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  // Durable invariant: the dictionary must stay usable (non-empty) and a floor
+  // guards against accidentally losing a large part of the dataset. There is
+  // deliberately NO upper bound: the contribution guide allows new entries, so
+  // a legitimate 99th, 100th or 101st entry must never fail the gate.
+  assert.ok(data.items.length > 0, "Dictionary must not be empty");
+  assert.ok(
+    data.items.length >= 50,
+    `Items count ${data.items.length} is below the safety floor (50): possible accidental data loss`,
+  );
+});
+
+test("non-food dictionary: every item satisfies structural contracts", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const categoryIds = new Set(data.categories.map((c) => c.id));
+  const seenIds = new Set();
+  const seenLabels = new Set();
+  const idRegex = /^[a-z]+(\.[a-z0-9-]+)+$/;
+  const iconRegex = /^[a-z0-9-]+$/;
+
+  for (const [index, item] of data.items.entries()) {
+    const context = `item at index ${index} (${item.id || "unidentified"})`;
+
+    // ID contract
+    assert.ok(item.id, `Missing id for ${context}`);
+    assert.match(item.id, idRegex, `Invalid id format for ${context}`);
+    assert.ok(!seenIds.has(item.id), `Duplicate id ${item.id}`);
+    seenIds.add(item.id);
+
+    // Category contract
+    assert.ok(item.category, `Missing category for ${context}`);
+    assert.ok(categoryIds.has(item.category), `Unknown category ${item.category} in ${context}`);
+    assert.ok(
+      item.id.startsWith(`${item.category}.`),
+      `Id ${item.id} must be namespaced with category prefix ${item.category}.`,
+    );
+
+    // Label contract
+    assert.ok(item.label && item.label.trim().length > 0, `Missing or blank label for ${context}`);
+    assert.equal(item.label, item.label.trim(), `Label has untrimmed whitespace: "${item.label}"`);
+    assert.ok(!seenLabels.has(item.label), `Duplicate label "${item.label}"`);
+    seenLabels.add(item.label);
+
+    // Icon contract
+    assert.ok(item.icon && item.icon.trim().length > 0, `Missing icon for ${context}`);
+    assert.match(item.icon, iconRegex, `Icon key "${item.icon}" must be kebab-case`);
+
+    // Default unit contract
+    assert.ok(
+      ALLOWED_UNITS.has(item.default_unit),
+      `Invalid default_unit "${item.default_unit}" in ${context}. Allowed: ${[...ALLOWED_UNITS].join(", ")}`,
+    );
+
+    // Aliases contract
+    assert.ok(Array.isArray(item.aliases), `Aliases must be an array for ${context}`);
+    assert.ok(item.aliases.length > 0, `Aliases must not be empty for ${context}`);
+    const aliasSet = new Set();
+    for (const alias of item.aliases) {
+      assert.ok(typeof alias === "string" && alias.trim().length > 0, `Empty alias in ${context}`);
+      assert.equal(alias, alias.trim(), `Alias has untrimmed whitespace: "${alias}"`);
+      assert.ok(!aliasSet.has(alias.toLowerCase()), `Duplicate alias "${alias}" in ${context}`);
+      aliasSet.add(alias.toLowerCase());
+    }
+
+    // Tags contract: 1 to 3 tags (schema §3). Single-tag entries are legitimate.
+    assert.ok(Array.isArray(item.tags), `Tags must be an array for ${context}`);
+    assert.ok(item.tags.length >= 1 && item.tags.length <= 3,
+      `Tags count ${item.tags.length} must be between 1 and 3 for ${context}`);
+    const tagSet = new Set();
+    for (const tag of item.tags) {
+      assert.ok(typeof tag === "string" && tag.trim().length > 0, `Empty tag in ${context}`);
+      assert.equal(tag, tag.trim(), `Tag has untrimmed whitespace: "${tag}"`);
+      assert.ok(!tagSet.has(tag.toLowerCase()), `Duplicate tag "${tag}" in ${context}`);
+      tagSet.add(tag.toLowerCase());
+    }
+  }
+});
+
+test("non-food dictionary: deterministic sorting by id", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const sortedIds = [...data.items.map((i) => i.id)].sort();
+  const actualIds = data.items.map((i) => i.id);
+  assert.deepEqual(actualIds, sortedIds, "Items must be deterministically sorted by id");
+});
+
+test("non-food dictionary: no commercial brand names in labels or aliases", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+
+  for (const item of data.items) {
+    assert.equal(
+      findBrandInText(item.label),
+      null,
+      `Item label "${item.label}" contains commercial brand "${findBrandInText(item.label)}"`,
+    );
+
+    for (const alias of item.aliases) {
+      assert.equal(
+        findBrandInText(alias),
+        null,
+        `Item alias "${alias}" (in ${item.id}) contains commercial brand "${findBrandInText(alias)}"`,
+      );
+    }
+  }
+});
+
+test("non-food dictionary: brand detection respects word boundaries (no substring false positives)", () => {
+  // Direct unit proof of the matcher itself, independent of dictionary content.
+  // Single-word brands detected as whole words…
+  assert.equal(findBrandInText("BIC"), "bic");
+  assert.equal(findBrandInText("rasoir Bic"), "bic");
+  assert.equal(findBrandInText("Lotion Dove"), "dove");
+  assert.equal(findBrandInText("Lessive Skip"), "skip");
+  // …but never as inner substrings of generic words.
+  assert.equal(findBrandInText("bicarbonate de soude"), null);
+  assert.equal(findBrandInText("Bicarbonate alimentaire"), null);
+  // Multi-word brands detected as contiguous phrases…
+  assert.equal(findBrandInText("croquettes Royal Canin"), "royal canin");
+  assert.equal(findBrandInText("shampooing Head & Shoulders"), "head & shoulders");
+  assert.equal(findBrandInText("savon Le Chat"), "le chat");
+  assert.equal(findBrandInText("savon Le Petit Marseillais"), "le petit marseillais");
+  // …but a lone generic word never matches a longer brand phrase.
+  assert.equal(findBrandInText("jouet pour chat"), null);
+  assert.equal(findBrandInText("friandises pour chat"), null);
+  assert.equal(findBrandInText("canin"), null);
+});
+
+test("non-food dictionary: balanced category distribution", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const counts = {};
+  for (const item of data.items) {
+    counts[item.category] = (counts[item.category] || 0) + 1;
+  }
+
+  // Realistic bounds per category
+  assert.ok(counts.cleaning >= 15 && counts.cleaning <= 25, `Cleaning count ${counts.cleaning}`);
+  assert.ok(counts.hygiene >= 15 && counts.hygiene <= 25, `Hygiene count ${counts.hygiene}`);
+  assert.ok(counts.paper >= 8 && counts.paper <= 15, `Paper count ${counts.paper}`);
+  assert.ok(counts.household >= 12 && counts.household <= 20, `Household count ${counts.household}`);
+  assert.ok(counts.pets >= 8 && counts.pets <= 15, `Pets count ${counts.pets}`);
+  assert.ok(counts.health >= 8 && counts.health <= 15, `Health count ${counts.health}`);
+  assert.ok(counts.baby >= 8 && counts.baby <= 15, `Baby count ${counts.baby}`);
+});
+
+test("non-food dictionary: user-facing labels, categories and tags are in French", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+
+  // 1. Categories: all labels are explicitly in French
+  const rawEnglishCategories = ["cleaning", "hygiene", "paper", "household", "pets", "health", "baby"];
+  for (const cat of data.categories) {
+    assert.ok(
+      !rawEnglishCategories.includes(cat.label.toLowerCase()),
+      `Category label "${cat.label}" must not be raw English`,
+    );
+  }
+
+  // 2. Known raw English product names that must never be canonical labels
+  const FORBIDDEN_ENGLISH_PRODUCT_LABELS = new Set([
+    "bleach", "laundry detergent", "dishwasher salt", "dishwasher tablets",
+    "dishwashing liquid", "fabric softener", "paper towels", "toilet paper",
+    "cat litter", "dog food", "cat food", "baby wipes", "diapers", "trash bags",
+    "cotton pads", "dental floss", "conditioner", "toothpaste", "toothbrush",
+    "soap", "soap bar", "shaving cream", "shaving foam", "sponges", "sponge",
+    "matches", "lighter", "candles", "adhesive bandages", "saline solution",
+    "light bulbs", "food storage containers", "wet cat food", "dry cat food",
+    "wet dog food", "dry dog food", "sunscreen", "shower gel", "hand cream",
+    "lip balm", "mouthwash", "disposable razors", "cotton swabs", "floor cleaner",
+    "window cleaner", "multi-surface cleaner", "drain cleaner", "descaler",
+    "rubber gloves", "microfiber cloths", "vacuum bags", "coffee filters",
+    "baking paper", "aluminum foil", "plastic wrap", "freezer bags",
+    "dog waste bags", "pet shampoo", "cat treats", "dog treats"
+  ]);
+
+  // Obvious non-French technical nouns that should never appear in a French canonical product label
+  const FORBIDDEN_ENGLISH_TOKENS_IN_LABELS = new Set([
+    "cleaner", "wipes", "pads", "batteries", "tissues", "towels", "sponge",
+    "sponges", "gloves", "bleach", "litter", "diapers", "razors"
+  ]);
+
+  // English technical category keys must not be used as tags.
+  // Covers all 7 canonical category keys.
+  const FORBIDDEN_ENGLISH_TAGS = new Set([
+    "cleaning", "hygiene", "paper", "household", "pets", "health", "baby"
+  ]);
+
+  // Raw English phrases forbidden in aliases
+  const FORBIDDEN_ENGLISH_ALIASES = new Set([
+    "cat food", "dog food", "toilet paper", "paper towel", "paper towels",
+    "dish soap", "laundry detergent", "baby wipes", "wet wipes", "trash bags",
+    "cat litter", "body wash", "hand soap", "patchs allaitement"
+  ]);
+
+  for (const item of data.items) {
+    const labelLower = item.label.toLowerCase();
+
+    // Invariant: label must not equal technical id suffix (e.g. "bleach", "paper-towels")
+    const idSuffix = item.id.split(".").pop();
+    assert.notEqual(
+      labelLower,
+      idSuffix,
+      `Label "${item.label}" in ${item.id} must not equal raw technical id suffix`,
+    );
+    assert.notEqual(
+      labelLower,
+      idSuffix.replace(/-/g, " "),
+      `Label "${item.label}" in ${item.id} must not equal space-separated id suffix`,
+    );
+
+    // Invariant: label must not be a known raw English product name
+    assert.ok(
+      !FORBIDDEN_ENGLISH_PRODUCT_LABELS.has(labelLower),
+      `Item label "${item.label}" (${item.id}) must not be raw English`,
+    );
+
+    // Invariant: label must not contain forbidden English tokens
+    const tokens = labelLower.split(/[^a-zà-ÿ0-9]+/);
+    for (const token of tokens) {
+      assert.ok(
+        !FORBIDDEN_ENGLISH_TOKENS_IN_LABELS.has(token),
+        `Item label "${item.label}" (${item.id}) contains forbidden English token "${token}"`,
+      );
+    }
+
+    // Invariant: tags must not contain raw English category keys
+    for (const tag of item.tags) {
+      assert.ok(
+        !FORBIDDEN_ENGLISH_TAGS.has(tag.toLowerCase()),
+        `Item ${item.id} contains English category key as tag: "${tag}"`,
+      );
+    }
+
+    // Invariant: aliases must not contain raw untranslated English product names
+    for (const alias of item.aliases) {
+      assert.ok(
+        !FORBIDDEN_ENGLISH_ALIASES.has(alias.toLowerCase()),
+        `Item ${item.id} contains forbidden English alias: "${alias}"`,
+      );
+    }
+  }
+});
+
+test("non-food dictionary: no alias collision across distinct items", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const seenAliases = new Map();
+  for (const item of data.items) {
+    for (const alias of item.aliases) {
+      const normalized = alias.toLowerCase().trim();
+      assert.ok(
+        !seenAliases.has(normalized),
+        `Alias collision for "${alias}" between ${seenAliases.get(normalized)} and ${item.id}`,
+      );
+      seenAliases.set(normalized, item.id);
+    }
+  }
+});
+
+test("non-food dictionary: forbidden distinct-intention aliases do not re-appear", async () => {
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const FORBIDDEN_DISTINCT_INTENTION_ALIASES = [
+    { alias: "tétines de biberon", reason: "teats are distinct from feeding bottle" },
+    { alias: "brossettes interdentaires", reason: "interdental brushes are distinct from dental floss" },
+    { alias: "lames de rasoir", reason: "razor blades are distinct from disposable razors" },
+    { alias: "ciseaux à ongles", reason: "scissors are distinct from nail clippers" },
+    { alias: "lime à ongles", reason: "nail file is distinct from nail clippers" },
+    { alias: "protège-slips", reason: "panty liners are distinct from sanitary pads" },
+    { alias: "porte-manteaux", reason: "coat rack is distinct from clothes hangers" },
+    { alias: "tête brosse à dents", reason: "electric replacement head is distinct from toothbrush" },
+    { alias: "lait corporel", reason: "body lotion is distinct from face moisturizing cream" },
+    { alias: "eau nettoyante pour bébé", reason: "cleansing water is distinct from baby lotion/milk" }
+  ];
+
+  const allAliases = new Map();
+  for (const item of data.items) {
+    for (const a of item.aliases) {
+      allAliases.set(a.toLowerCase().trim(), item.id);
+    }
+  }
+
+  for (const check of FORBIDDEN_DISTINCT_INTENTION_ALIASES) {
+    assert.ok(
+      !allAliases.has(check.alias.toLowerCase().trim()),
+      `Forbidden alias "${check.alias}" found in ${allAliases.get(check.alias.toLowerCase().trim())} (${check.reason})`,
+    );
+  }
+});
+
+
+test("non-food dictionary: no duplicate of CookiGram-owned culinary consumables", async () => {
+  // Contract (docs/catalog-api.md § Data quality): culinary-adjacent consumables
+  // already owned by CookiGram must NOT be duplicated in the household/non-food
+  // dictionary. This gate reads the live catalog snapshot so it stays pinned to
+  // the real source of truth instead of a hardcoded copy of its terms.
+  const COOKIGRAM_OWNED_SLUGS = ["papier-aluminium", "papier-sulfurise"];
+  const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+  const ownedTerms = new Set();
+  for (const slug of COOKIGRAM_OWNED_SLUGS) {
+    const entry = catalog.ingredients[catalog.bySlug[slug]];
+    assert.ok(entry, `CookiGram catalog must still own "${slug}" for this gate to be meaningful`);
+    ownedTerms.add(normalizeTerm(entry.name));
+    for (const alias of entry.aliases || []) ownedTerms.add(normalizeTerm(alias));
+  }
+
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const removedIds = new Set(["paper.aluminum-foil", "paper.baking-paper"]);
+  for (const item of data.items) {
+    assert.ok(!removedIds.has(item.id), `Item ${item.id} duplicates a CookiGram-owned consumable`);
+    for (const term of [item.label, ...item.aliases]) {
+      assert.ok(
+        !ownedTerms.has(normalizeTerm(term)),
+        `Item ${item.id} reintroduces CookiGram-owned term "${term}" (label or alias)`,
+      );
+    }
+  }
+});
+
+test("non-food dictionary: normalized label+alias terms never collide across intentions", async () => {
+  // Each distinct purchase intention must own its search terms: the same
+  // normalized term (label or alias) must not resolve to two different items.
+  const data = JSON.parse(await readFile(dictPath, "utf8"));
+  const ownerByTerm = new Map();
+  for (const item of data.items) {
+    for (const term of [item.label, ...item.aliases]) {
+      const key = normalizeTerm(term);
+      if (!ownerByTerm.has(key)) ownerByTerm.set(key, item.id);
+      assert.equal(
+        ownerByTerm.get(key),
+        item.id,
+        `Normalized term "${term}" claimed by two intentions: ${ownerByTerm.get(key)} and ${item.id}`,
+      );
+    }
+  }
+});
