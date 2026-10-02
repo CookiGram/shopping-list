@@ -160,7 +160,7 @@ Les entrées du dictionnaire stockent des **clés sémantiques stables sans exte
    - Lors de la future intégration du dictionnaire non culinaire dans le runtime (`js/catalog.js`), l'adaptateur de catalogue devra assurer la résolution de cette clé vers le fichier d'asset concret (typiquement `./assets/icons/${item.icon}.svg`).
 3. **Comportement de repli gracieux (fallback) :**
    - À l'heure actuelle, les 97 clés d'icônes uniques de ce dictionnaire n'ont **aucun asset SVG correspondant** dans `assets/icons/` (les 174 fichiers SVG présents correspondent exclusivement aux ingrédients culinaires vendorisés).
-   - Tant qu'un asset SVG n'est pas fourni, le runtime utilise son mécanisme de fallback gracieux (pastille d'initiale / puce neutre). Aucune exception ou blocage n'est levé.
+   - Tant qu'un asset SVG n'est pas fourni, le runtime utilise son mécanisme de fallback gracieux sous forme de pastille neutre. Aucune exception ou erreur bloquante n'est levée.
 
 ### Pipeline de production d'icônes (lane ultérieure)
 Lorsqu'un lot d'icônes vectorielles non alimentaires sera produit :
