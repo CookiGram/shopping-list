@@ -121,6 +121,14 @@ test("Essentiel binaire: aucun texte/hint explicatif dans la section", () => {
     "la phrase explicative a disparu de js/app.js",
   );
   assert.ok(!html.includes("retrouver à chaque nouvelle liste"), "phrase absente de index.html");
+  assert.ok(
+    !componentsJs.includes("touchez un essentiel pour commencer"),
+    "l'empty-state ne pédagogise plus Essentiel (components.js)",
+  );
+  assert.ok(
+    !html.includes("touchez un essentiel pour commencer"),
+    "l'empty-state ne pédagogise plus Essentiel (index.html)",
+  );
 });
 
 test("Essentiel binaire: même SVG dans les deux états, couleur par aria-pressed", () => {
