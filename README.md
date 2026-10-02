@@ -151,3 +151,22 @@ Le premier objectif est de valider le modèle de companion :
 - design cohérent avec l'écosystème.
 
 Le prototype doit rester simple jusqu'à validation de ces mécanismes.
+
+### Prototype v0 (livré)
+
+PWA mono-page autonome, sans compte ni backend : recherche/autocomplétion
+locale avec tags contextuels, rituel des essentiels
+(valider/rejeter/ignorer le reste), favoris, staples, historique,
+persistance `localStorage`, catalogue culinaire CookiGram versionné +
+pack d'icônes embarqués, sync catalogue nightly via CI (PR, sans
+auto-merge). Aucune dépendance runtime vers CookiGram ou Home ;
+l'arrimage n'est pas encore implémenté (hors scope v0).
+
+- Démo publiée : `https://cookigram.github.io/shopping-list/`
+- Lancement local : `python3 -m http.server 8080` puis ouvrir
+  `http://localhost:8080/`
+- Tests : `node --test tests/*.test.mjs` et
+  `python3 -m unittest discover -s tests/sync`
+- Limites actuelles : pas de découverte/arrimage, icônes hors cuisine
+  en fallback (pas de pack dédié), checklist E2E navigateur à passer
+  manuellement (`docs/e2e-checklist.md`).

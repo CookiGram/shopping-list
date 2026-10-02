@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Liste de courses</title>
+  <meta name="description" content="Liste de courses hors ligne — ingrédients CookiGram, rapide et simple.">
+  <meta name="theme-color" content="#fffaf1">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <span class="brand">
+        <img class="brand-logo" src="./icons/icon.svg" alt="" width="36" height="36">
+        Courses
+      </span>
+      <span class="brand-count" id="count" aria-live="polite">0 article</span>
+    </header>
+
+    <main>
+      <!-- Lane mount: search bar + suggestions (search lane owns behavior) -->
+      <section class="search-section" id="searchbar" aria-label="Rechercher un ingrédient">
+        <div class="search-bar">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="shopping-search" class="search-input"
+            placeholder="Ajouter un ingrédient… (ex. ail, beurre)"
+            aria-label="Rechercher et ajouter un ingrédient" autocomplete="off"
+            role="combobox" aria-expanded="false" aria-controls="shopping-suggestions">
+          <button type="button" class="search-clear" id="shopping-clear"
+            aria-label="Effacer la recherche" hidden>×</button>
+        </div>
+        <ul id="shopping-suggestions" class="search-suggestions"
+          role="listbox" aria-label="Suggestions d'ingrédients" hidden></ul>
+      </section>
+
+      <!-- Lane mount: pantry-staple quick-add chips (essentials lane owns content) -->
+      <section class="essentials" id="essentials" aria-labelledby="essentials-title">
+        <h2 class="section-title" id="essentials-title">Essentiels</h2>
+        <ul class="chip-row" id="essentials-chips"></ul>
+      </section>
+
+      <!-- Lane mount: the shopping list, grouped by aisle (store/app lanes own rows) -->
+      <section aria-labelledby="list-title">
+        <div class="list-head">
+          <h2 class="section-title" id="list-title">Ma liste</h2>
+        </div>
+        <div class="shopping-list" id="list" data-shopping-list aria-live="polite">
+          <div class="empty-state" data-empty-state>
+            <p><strong>Votre liste est vide.</strong></p>
+            <p>Recherchez un ingrédient ci-dessus ou touchez un essentiel pour commencer.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Secondary actions: copy / share / export + clear (export lane owns behavior) -->
+      <div class="actions-bar" role="group" aria-label="Actions de la liste">
+        <button type="button" class="icon-btn icon-btn--danger" data-clear-checked
+          aria-label="Retirer les articles cochés" title="Retirer les articles cochés">🧹</button>
+        <span class="actions-separator" aria-hidden="true"></span>
+        <button type="button" class="shopping-action" data-copy-shopping
+          aria-label="Copier la liste" title="Copier la liste">
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <rect x="8" y="7" width="20" height="24" rx="4" class="icon-paper"/>
+            <path d="M14 7.5V5.8c0-1 0.8-1.8 1.8-1.8h4.4c1 0 1.8.8 1.8 1.8v1.7" class="icon-ink"/>
+            <path d="M14 14h9M14 19h9M14 24h7" class="icon-ink"/>
+            <circle cx="11.2" cy="14" r="1.1" class="icon-accent-fill"/>
+            <circle cx="11.2" cy="19" r="1.1" class="icon-accent-fill"/>
+            <circle cx="11.2" cy="24" r="1.1" class="icon-accent-fill"/>
+            <path d="M29 8.5l2-2M30 12h2.5" class="icon-accent"/>
+          </svg>
+        </button>
+        <button type="button" class="shopping-action" data-share-shopping
+          aria-label="Partager la liste" title="Partager la liste">
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <rect x="5.5" y="9" width="25" height="19" rx="4" class="icon-paper"/>
+            <path d="M7.5 11.5L18 20l10.5-8.5" class="icon-ink"/>
+            <path d="M7 26l8.2-7M29 26l-8.2-7" class="icon-ink"/>
+            <path d="M28.5 6.5l2-2M31 9h2" class="icon-accent"/>
+          </svg>
+        </button>
+        <button type="button" class="shopping-action" data-export-shopping
+          aria-label="Exporter la liste en fichier texte" title="Exporter (.txt)">
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <path d="M9 10.5h18l-1.5 19h-15z" class="icon-paper"/>
+            <path d="M13 10.5c0-3 2.2-5 5-5s5 2 5 5" class="icon-ink"/>
+            <path d="M18 13v9M14.8 19l3.2 3.4 3.2-3.4" class="icon-ink"/>
+            <path d="M27.8 8l2-2M29.8 11h2" class="icon-accent"/>
+            <path d="M12 26h12" class="icon-accent"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Lane mount: recently removed / history (history lane owns content) -->
+      <section id="history" aria-labelledby="history-title" hidden>
+        <h2 class="section-title" id="history-title">Récents</h2>
+        <ul class="history-list" id="history-list"></ul>
+      </section>
+    </main>
+
+    <footer class="app-foot">
+      <span data-catalog-version>Catalogue : chargement…</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

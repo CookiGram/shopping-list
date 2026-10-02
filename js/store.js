@@ -1,0 +1,498 @@
+/* Shopping List v0 — Store (Lane G).
+ * localStorage persistence for the current list, favorites, staple-ritual
+ * memory, history, prefs, and a frequency signal for ranking.
+ * Vanilla ES module, no dependencies, no catalog imports: catalog concepts
+ * only cross this boundary as plain {slug, name} data (see docs/store-api.md).
+ *
+ * Contract (cookigram-contract.md §9.2): getItems, addItem, toggleItem,
+ * setQty, clearChecked and subscribe are kept verbatim; everything else is
+ * an additive extension documented in docs/store-api.md.
+ */
+
+/** Versioned storage keys (same :v1 namespace habit as CookiGram). */
+export const STORE_KEYS = Object.freeze({
+  items: "shopping-list:items:v1",
+  favorites: "shopping-list:favorites:v1",
+  staples: "shopping-list:staples:v1",
+  history: "shopping-list:history:v1",
+  prefs: "shopping-list:prefs:v1",
+  frequency: "shopping-list:frequency:v1",
+});
+
+/** Document CustomEvent name for all store mutations (contract §9.2). */
+export const CHANGE_EVENT = "shopping-list:change";
+
+/** Allowed `item.provenance.source` values. */
+export const PROVENANCE_SOURCES = Object.freeze(["cookigram", "dict", "custom"]);
+
+/** Allowed staple-ritual decisions recorded by `noteStapleDecision`. */
+export const STAPLE_DECISIONS = Object.freeze(["added", "rejected", "ignored"]);
+
+/** Default prefs (see `getPrefs` / `setPrefs`). */
+export const DEFAULT_PREFS = Object.freeze({
+  essentialsEnabled: true,
+  lastRitualAt: null,
+});
+
+const MAX_FREQUENCY_KEYS = 300;
+const MAX_STAPLE_DECISIONS = 200;
+
+/* ------------------------------------------------------------------ */
+/* Storage layer                                                       */
+/* ------------------------------------------------------------------ */
+
+const memFallback = new Map();
+const memoryAdapter = {
+  getItem: (key) => (memFallback.has(key) ? memFallback.get(key) : null),
+  setItem: (key, value) => {
+    memFallback.set(key, String(value));
+  },
+  removeItem: (key) => {
+    memFallback.delete(key);
+  },
+};
+
+let customStorage = null;
+
+/**
+ * Test-only injection (mirrors the `fetchImpl` pattern of catalog.js).
+ * Pass `{storage: null}` (or nothing) to restore the default backend.
+ */
+export const configureStore = ({ storage } = {}) => {
+  customStorage = storage ?? null;
+};
+
+const backend = () => {
+  if (customStorage) return customStorage;
+  try {
+    if (typeof globalThis.localStorage !== "undefined") return globalThis.localStorage;
+  } catch {
+    /* Private mode / non-DOM runtime: fall through to memory. */
+  }
+  return null;
+};
+
+const storeOf = () => backend() ?? memoryAdapter;
+
+const cloneJson = (value) => JSON.parse(JSON.stringify(value));
+
+/**
+ * Shared persistence primitives. `history.js` (same lane) uses these for
+ * its own key so all keys stay centralized in `STORE_KEYS`.
+ */
+export const readStoreKey = (key, fallback) => {
+  let raw = null;
+  try {
+    raw = storeOf().getItem(key);
+  } catch {
+    return cloneJson(fallback);
+  }
+  if (raw === null || raw === undefined) return cloneJson(fallback);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return cloneJson(fallback); /* Corrupt payload: reset to default. */
+  }
+};
+
+export const writeStoreKey = (key, value) => {
+  const raw = JSON.stringify(value);
+  try {
+    storeOf().setItem(key, raw);
+  } catch {
+    /* Quota / private mode: keep the session working in memory. */
+    try {
+      memoryAdapter.setItem(key, raw);
+    } catch {
+      /* Best effort; never break the UI on persistence failures. */
+    }
+  }
+};
+
+/* ------------------------------------------------------------------ */
+/* Events                                                              */
+/* ------------------------------------------------------------------ */
+
+/** Emit a store change event (document-guarded for non-DOM runtimes). */
+export const emitStoreChange = (type, detail = {}) => {
+  if (typeof document === "undefined" || typeof CustomEvent === "undefined") return;
+  document.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: { type, ...detail } }));
+};
+
+let crossTabInstalled = false;
+
+/* Cross-tab reactivity, mirroring CookiGram selection-app.js: storage
+ * events fire only in *other* tabs, so re-emit them locally. */
+const installCrossTab = () => {
+  if (crossTabInstalled || typeof window === "undefined") return;
+  crossTabInstalled = true;
+  const known = new Set(Object.values(STORE_KEYS));
+  window.addEventListener("storage", (event) => {
+    if (event.key !== null && !known.has(event.key)) return;
+    emitStoreChange("external", event.key ? { key: event.key } : {});
+  });
+};
+
+/**
+ * Subscribe to `CHANGE_EVENT`. Listener receives the CustomEvent whose
+ * `detail` is `{type, id?}` (contract §9.2). Returns an unsubscribe fn.
+ */
+export const subscribe = (listener) => {
+  if (typeof document === "undefined") return () => {};
+  installCrossTab();
+  document.addEventListener(CHANGE_EVENT, listener);
+  return () => document.removeEventListener(CHANGE_EVENT, listener);
+};
+
+/* ------------------------------------------------------------------ */
+/* Shared helpers                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * FR-safe normalization. Same semantics as catalog.js `normalizeKey`,
+ * duplicated on purpose so the store stays decoupled from catalog.js.
+ */
+export const normalizeName = (value) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeQty = (value) => String(value ?? "").trim().replace(/\s+/g, " ");
+
+/** Collision-resistant id without dependencies. */
+export const createId = () => {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* Fall through to the Math.random fallback. */
+  }
+  return `${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffffff).toString(36)}`;
+};
+
+/* ------------------------------------------------------------------ */
+/* Current list                                                        */
+/*                                                     item = {id, slug|null, name, qty, checked, addedAt, provenance} */
+/* ------------------------------------------------------------------ */
+
+const readItems = () => {
+  const raw = readStoreKey(STORE_KEYS.items, []);
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item) => item && typeof item.name === "string");
+};
+
+const cloneItem = (item) => ({
+  ...item,
+  provenance: { ...(item.provenance ?? { source: "custom" }) },
+});
+
+const normalizeProvenance = (provenance, slug) => {
+  const source = provenance?.source ?? (slug ? "cookigram" : "custom");
+  if (!PROVENANCE_SOURCES.includes(source)) {
+    throw new Error(`store: unknown provenance source ${JSON.stringify(source)}`);
+  }
+  return { source };
+};
+
+/** All current-list items, in insertion order (copies; mutate via setters). */
+export const getItems = () => readItems().map(cloneItem);
+
+/** One item by id, or null. */
+export const getItem = (id) => {
+  const found = readItems().find((item) => item.id === id);
+  return found ? cloneItem(found) : null;
+};
+
+/**
+ * Add an item. Merges (no duplicate) on identical normalized name + qty
+ * (contract §9.2); a checked match is re-activated. Records a frequency
+ * signal on every call. Throws when `name` is blank.
+ */
+export const addItem = ({ name, qty = "", slug = null, provenance } = {}) => {
+  const cleanName = String(name ?? "").trim();
+  if (!cleanName) throw new Error("store.addItem: name is required");
+  const cleanQty = normalizeQty(qty);
+  const cleanSlug = slug ? String(slug) : null;
+  const items = readItems();
+  const existing = items.find(
+    (item) => normalizeName(item.name) === normalizeName(cleanName)
+      && normalizeQty(item.qty) === cleanQty,
+  );
+  bumpFrequency(cleanName, existing?.slug ?? cleanSlug);
+  if (existing) {
+    if (existing.checked) {
+      existing.checked = false;
+      writeStoreKey(STORE_KEYS.items, items);
+    }
+    emitStoreChange("items:add", { id: existing.id, merged: true });
+    return cloneItem(existing);
+  }
+  const item = {
+    id: createId(),
+    slug: cleanSlug,
+    name: cleanName,
+    qty: cleanQty,
+    checked: false,
+    addedAt: Date.now(),
+    provenance: normalizeProvenance(provenance, cleanSlug),
+  };
+  items.push(item);
+  writeStoreKey(STORE_KEYS.items, items);
+  emitStoreChange("items:add", { id: item.id });
+  return cloneItem(item);
+};
+
+/** Flip `checked`. Returns the updated item, or null when unknown. */
+export const toggleItem = (id) => {
+  const items = readItems();
+  const found = items.find((item) => item.id === id);
+  if (!found) return null;
+  found.checked = !found.checked;
+  writeStoreKey(STORE_KEYS.items, items);
+  emitStoreChange("items:toggle", { id });
+  return cloneItem(found);
+};
+
+/** Set `checked` explicitly. Returns the updated item, or null. */
+export const setChecked = (id, checked) => {
+  const items = readItems();
+  const found = items.find((item) => item.id === id);
+  if (!found) return null;
+  found.checked = Boolean(checked);
+  writeStoreKey(STORE_KEYS.items, items);
+  emitStoreChange("items:toggle", { id });
+  return cloneItem(found);
+};
+
+/** Replace the quantity string. Returns the updated item, or null. */
+export const setQty = (id, qty) => {
+  const items = readItems();
+  const found = items.find((item) => item.id === id);
+  if (!found) return null;
+  found.qty = normalizeQty(qty);
+  writeStoreKey(STORE_KEYS.items, items);
+  emitStoreChange("items:qty", { id });
+  return cloneItem(found);
+};
+
+/** Delete one item. Returns true when something was removed. */
+export const removeItem = (id) => {
+  const items = readItems();
+  const kept = items.filter((item) => item.id !== id);
+  if (kept.length === items.length) return false;
+  writeStoreKey(STORE_KEYS.items, kept);
+  emitStoreChange("items:remove", { id });
+  return true;
+};
+
+/** Delete all checked items. Returns the removed items (for history). */
+export const clearChecked = () => {
+  const items = readItems();
+  const removed = items.filter((item) => item.checked);
+  if (removed.length === 0) return [];
+  writeStoreKey(STORE_KEYS.items, items.filter((item) => !item.checked));
+  emitStoreChange("items:clear-checked", { count: removed.length });
+  return removed.map(cloneItem);
+};
+
+/** Delete every item. Returns the number removed. */
+export const clearAll = () => {
+  const count = readItems().length;
+  writeStoreKey(STORE_KEYS.items, []);
+  emitStoreChange("items:clear", { count });
+  return count;
+};
+
+/* ------------------------------------------------------------------ */
+/* Frequency signal                                                    */
+/*                                                     {normName: {name, slug, count, lastUsedAt}} */
+/* ------------------------------------------------------------------ */
+
+const readFrequency = () => {
+  const raw = readStoreKey(STORE_KEYS.frequency, {});
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+};
+
+const bumpFrequency = (name, slug) => {
+  const key = normalizeName(name);
+  if (!key) return;
+  const freq = readFrequency();
+  const prev = freq[key];
+  freq[key] = {
+    name: prev?.name ?? String(name).trim(),
+    slug: slug ?? prev?.slug ?? null,
+    count: (prev?.count ?? 0) + 1,
+    lastUsedAt: Date.now(),
+  };
+  const keys = Object.keys(freq);
+  if (keys.length > MAX_FREQUENCY_KEYS) {
+    keys
+      .sort((a, b) => (freq[a].lastUsedAt ?? 0) - (freq[b].lastUsedAt ?? 0))
+      .slice(0, keys.length - MAX_FREQUENCY_KEYS)
+      .forEach((oldest) => {
+        delete freq[oldest];
+      });
+  }
+  writeStoreKey(STORE_KEYS.frequency, freq);
+};
+
+/** Frequency record for a name (normalized lookup), or null. */
+export const getFrequency = (name) => {
+  const record = readFrequency()[normalizeName(name)];
+  return record ? { ...record } : null;
+};
+
+/**
+ * Top `limit` frequent records, count desc then recency desc.
+ * `exclude` holds slugs to skip (e.g. already on the list).
+ */
+export const topFrequent = (limit = 8, { exclude = [] } = {}) => {
+  const excluded = new Set(exclude.map((slug) => String(slug)));
+  return Object.entries(readFrequency())
+    .filter(([, record]) => !(record.slug && excluded.has(record.slug)))
+    .sort(
+      (a, b) => b[1].count - a[1].count || (b[1].lastUsedAt ?? 0) - (a[1].lastUsedAt ?? 0),
+    )
+    .slice(0, Math.max(0, limit))
+    .map(([key, record]) => ({ key, ...record }));
+};
+
+/* ------------------------------------------------------------------ */
+/* Favorites                                                           */
+/*                                                     [{key, slug|null, name, addedAt}] */
+/* ------------------------------------------------------------------ */
+
+/** Stable favorite key: the slug, else `name:<normalized>`. */
+export const favoriteKey = ({ slug = null, name = "" } = {}) =>
+  (slug ? String(slug) : `name:${normalizeName(name)}`);
+
+const readFavorites = () => {
+  const raw = readStoreKey(STORE_KEYS.favorites, []);
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((fav) => fav && typeof fav.key === "string");
+};
+
+/** All favorites, in the order they were added (copies). */
+export const getFavorites = () => readFavorites().map((fav) => ({ ...fav }));
+
+/** True when `{slug?, name}` is a favorite. */
+export const isFavorite = (ref) => readFavorites().some((fav) => fav.key === favoriteKey(ref));
+
+/**
+ * Toggle a favorite. Returns `{favorite, key}` with the state *after*
+ * the toggle. Throws when both `slug` and `name` are blank.
+ */
+export const toggleFavorite = ({ slug = null, name = "" } = {}) => {
+  const cleanName = String(name ?? "").trim();
+  if (!cleanName && !slug) throw new Error("store.toggleFavorite: name or slug is required");
+  const key = favoriteKey({ slug, name: cleanName });
+  const favs = readFavorites();
+  const index = favs.findIndex((fav) => fav.key === key);
+  let favorite;
+  if (index === -1) {
+    favs.push({
+      key,
+      slug: slug ? String(slug) : null,
+      name: cleanName || String(slug),
+      addedAt: Date.now(),
+    });
+    favorite = true;
+  } else {
+    favs.splice(index, 1);
+    favorite = false;
+  }
+  writeStoreKey(STORE_KEYS.favorites, favs);
+  emitStoreChange("favorites:toggle", { key, favorite });
+  return { favorite, key };
+};
+
+/** Delete all favorites. Returns the number removed. */
+export const clearFavorites = () => {
+  const count = readFavorites().length;
+  writeStoreKey(STORE_KEYS.favorites, []);
+  emitStoreChange("favorites:clear", { count });
+  return count;
+};
+
+/* ------------------------------------------------------------------ */
+/* Staple-ritual memory (decisions only — never a second list)          */
+/*                                                     {slug: {decision, at}} */
+/* ------------------------------------------------------------------ */
+
+const readStapleDecisions = () => {
+  const raw = readStoreKey(STORE_KEYS.staples, {});
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return Object.fromEntries(
+    Object.entries(raw).filter(
+      ([, rec]) => rec && STAPLE_DECISIONS.includes(rec.decision),
+    ),
+  );
+};
+
+/**
+ * Record one ritual decision so future rituals can skip recently
+ * rejected staples (see staples.js `filterCandidates`). The ephemeral
+ * ritual itself lives in memory only; this is just the memory.
+ */
+export const noteStapleDecision = (slug, decision) => {
+  if (!slug) throw new Error("store.noteStapleDecision: slug is required");
+  if (!STAPLE_DECISIONS.includes(decision)) {
+    throw new Error(`store.noteStapleDecision: unknown decision ${JSON.stringify(decision)}`);
+  }
+  const all = readStapleDecisions();
+  all[String(slug)] = { decision, at: Date.now() };
+  const keys = Object.keys(all);
+  if (keys.length > MAX_STAPLE_DECISIONS) {
+    keys
+      .sort((a, b) => (all[a].at ?? 0) - (all[b].at ?? 0))
+      .slice(0, keys.length - MAX_STAPLE_DECISIONS)
+      .forEach((oldest) => {
+        delete all[oldest];
+      });
+  }
+  writeStoreKey(STORE_KEYS.staples, all);
+  emitStoreChange("staples:decision", { key: String(slug), decision });
+  return { ...all[String(slug)] };
+};
+
+/** Copy of all recorded staple decisions. */
+export const getStapleDecisions = () =>
+  Object.fromEntries(Object.entries(readStapleDecisions()).map(([k, v]) => [k, { ...v }]));
+
+/** Forget all staple decisions. Returns the number removed. */
+export const clearStapleDecisions = () => {
+  const count = Object.keys(readStapleDecisions()).length;
+  writeStoreKey(STORE_KEYS.staples, {});
+  emitStoreChange("staples:clear", { count });
+  return count;
+};
+
+/* ------------------------------------------------------------------ */
+/* Prefs                                                               */
+/* ------------------------------------------------------------------ */
+
+/** Merged prefs: stored values over `DEFAULT_PREFS` (extra keys kept). */
+export const getPrefs = () => {
+  const raw = readStoreKey(STORE_KEYS.prefs, {});
+  const stored = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  return { ...cloneJson(DEFAULT_PREFS), ...stored };
+};
+
+/** Merge `patch` into prefs. Returns the merged prefs. */
+export const setPrefs = (patch = {}) => {
+  const merged = { ...getPrefs(), ...patch };
+  writeStoreKey(STORE_KEYS.prefs, merged);
+  emitStoreChange("prefs:change", {});
+  return { ...merged };
+};
+
+/** Reset prefs to `DEFAULT_PREFS`. */
+export const resetPrefs = () => {
+  writeStoreKey(STORE_KEYS.prefs, cloneJson(DEFAULT_PREFS));
+  emitStoreChange("prefs:change", {});
+  return { ...cloneJson(DEFAULT_PREFS) };
+};
