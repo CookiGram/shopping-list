@@ -18,23 +18,45 @@ const componentsJs = readFileSync(join(root, "js", "components.js"), "utf8");
 const appJs = readFileSync(join(root, "js", "app.js"), "utf8");
 const swJs = readFileSync(join(root, "sw.js"), "utf8");
 
-test("Empty/Récents: l'empty-state affiche une illustration légère + un message minimal", () => {
+test("Empty/Récents: l'empty-state ne montre que l'illustration, sans texte visible", () => {
   const fallback = html.match(/<div class="empty-state"[\s\S]*?<\/div>/);
   assert.ok(fallback, "fallback empty-state présent dans index.html");
   assert.ok(
-    /<img[^>]*empty-basket\.svg[^>]*alt="[^"]+"/.test(fallback[0]),
-    "le fallback embarque l'illustration avec un alt",
+    /<img[^>]*empty-basket\.svg[^>]*alt=""/.test(fallback[0]),
+    "le fallback embarque l'illustration (img décorative)",
   );
-  assert.ok(fallback[0].includes("Votre liste est vide."), "message minimal conservé");
-  assert.strictEqual(
-    [...fallback[0].matchAll(/<p[\s>]/g)].length,
-    1,
-    "un seul paragraphe, pas de pédagogie",
-  );
+  assert.ok(!/<p[\s>]/.test(fallback[0]), "aucun paragraphe visible dans l'empty-state");
+  assert.ok(!/<strong>/.test(fallback[0]), "aucun texte d'état visible");
   const fn = componentsJs.match(/export function emptyState[\s\S]*?\n\}/);
   assert.ok(fn, "emptyState existe dans components.js");
   assert.ok(fn[0].includes("empty-basket.svg"), "emptyState() rend la même illustration");
-  assert.ok(fn[0].includes("Votre liste est vide."), "emptyState() garde le message minimal");
+  assert.ok(!/el\("p"/.test(fn[0]), "emptyState() ne construit aucun paragraphe");
+});
+
+test("Empty/Récents: tooltip hover/focus discret, clavier et lecteur d'écran", () => {
+  const fallback = html.match(/<div class="empty-state"[\s\S]*?<\/div>/)[0];
+  assert.ok(
+    /<span[^>]*empty-state-tip[^>]*tabindex="0"[^>]*role="img"[^>]*aria-label="Votre liste est vide\."/.test(fallback) ||
+      /<span[^>]*aria-label="Votre liste est vide\."[^>]*>/.test(fallback) && fallback.includes("empty-state-tip") &&
+      fallback.includes('tabindex="0"') && fallback.includes('role="img"'),
+    "le wrapper porte tip + tabindex + role=img + phrase unique",
+  );
+  const tip = css.match(/\.empty-state-tip::after\s*\{([^}]*)\}/);
+  assert.ok(tip, "règle .empty-state-tip::after présente");
+  assert.ok(/content\s*:\s*attr\(aria-label\)/.test(tip[1]), "le tooltip lit la phrase unique (pas de doublon)");
+  const gated = css.match(/@media\s*\(hover\s*:\s*hover\)\s*\{([\s\S]*?)\n\}/);
+  assert.ok(gated, "hover restreint aux dispositifs hover (touch propre)");
+  assert.ok(/\.empty-state-tip:hover::after/.test(gated[1]), "le tooltip s'affiche au hover");
+  const focusRule = css.match(/\.empty-state-tip:focus-visible::after\s*\{([^}]*)\}/);
+  assert.ok(focusRule, "règle focus-visible dédiée présente");
+  assert.ok(/opacity\s*:\s*1/.test(focusRule[1]), "le tooltip s'affiche au focus clavier");
+  assert.ok(
+    !/\.empty-state-tip:focus-visible::after/.test(gated[1]),
+    "le focus sort du gate hover (ne matche jamais un tap tactile)",
+  );
+  const fn = componentsJs.match(/export function emptyState[\s\S]*?\n\}/)[0];
+  assert.ok(fn.includes("empty-state-tip"), "emptyState() construit le même wrapper");
+  assert.ok(fn.includes("Votre liste est vide."), "emptyState() porte la phrase unique");
 });
 
 test("Empty/Récents: l'illustration est intégrée proprement au repo", () => {
