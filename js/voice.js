@@ -26,7 +26,7 @@ const cleanItem = (value) =>
   String(value ?? "")
     .trim()
     .replace(/^[,;:.!?\s]+|[,;:.!?\s]+$/gu, "")
-    .replace(/^(?:du|de\s+la|de\s+l['’]|des|un|une)\s+/iu, "")
+    .replace(/^(?:(?:du|de\s+la|de\s+l['’]|des|un|une)\s+|l['’]|d['’])/iu, "")
     .trim();
 
 const vocabularyTerms = (vocabulary = []) => {

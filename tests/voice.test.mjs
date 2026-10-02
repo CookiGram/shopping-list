@@ -18,6 +18,11 @@ test("voice: catalogue vocabulary segments punctuation-free dictation", () => {
   assert.deepEqual(splitVoiceTranscript("lait oeufs papier toilette", vocab), ["lait", "œufs", "papier toilette"]);
 });
 
+test("voice: elided determiners stripped, plain words untouched", () => {
+  assert.deepEqual(splitVoiceTranscript("l'ail et d'œufs"), ["ail", "œufs"]);
+  assert.deepEqual(splitVoiceTranscript("l’ail, lait et univers"), ["ail", "lait", "univers"]);
+});
+
 test("voice: unknown uninterrupted phrase stays one item rather than guessing", () => {
   assert.deepEqual(splitVoiceTranscript("truc bizarre", ["lait", "œufs"]), ["truc bizarre"]);
   assert.deepEqual(splitVoiceTranscript(""), []);
