@@ -1,5 +1,5 @@
 /* Shopping List v0 — app wiring (Lane H).
- * Wiring only: connects catalog/search/store/list/tags/history/staples/
+ * Wiring only: connects catalog/search/store/list/tags/history/ritual/
  * components lanes behind the index.html mount points. No ranking, no
  * storage, no styles of its own — behavior lives in the lane modules.
  *
@@ -228,7 +228,7 @@ function updateClearButton() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Essentials (staple ritual chips)                                    */
+/* Essentials (ritual proposal chips)                                */
 /* ------------------------------------------------------------------ */
 
 function essentialCandidates() {
