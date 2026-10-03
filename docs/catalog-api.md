@@ -9,7 +9,8 @@ no dependencies, no backend, no runtime reads of CookiGram files.
 | ---- | ----- | ------- |
 | `js/catalog.js` | Lane C | This API |
 | `data/cookigram-catalog.json` | Lane C (sync output) | 379 culinary ingredients, schema §8 of `cookigram-contract.md` |
-| `data/shopping-dict.json` | Lane C (authored) | 48 non-culinary entries (household, hygiene, baby, pets) |
+| `data/shopping-dict.json` | Lane C (authored) | Shopping-owned additions (household and selected packaged products) |
+| `data/product-variants.json` | Shopping List | Local package choices attached to canonical catalog slugs |
 | `data/aisles.json` | Lane C | Static default category→aisle mapping |
 
 ## Snapshot provenance
@@ -52,6 +53,21 @@ Both files carry a `bySlug` index map. `icon` is a filename from
 CookiGram `static/icons/ingredients/` at the sync `ref`, or `""`
 (UI renders the empty-span fallback). 172 distinct SVGs are referenced;
 the UI lane vendors them into `assets/icons/`.
+
+## Product variants
+
+`product-variants.json` keeps package choices separate from the synced
+CookiGram snapshot. Each row references one canonical `canonical_slug` and
+provides a stable `id`, compact `label`, numeric `quantity`, `unit`, package
+`format`, local `icon`, optional display `product_label`, and search
+`aliases`. The search view expands a canonical product with variants into
+selectable rows that inherit its
+category, aisle, tags, and provenance. It does not add catalog products such
+as “oeufs x6”.
+
+The list stores the canonical `slug` plus optional `variantId`; its display
+name includes the chosen package label. This remains backward-compatible with
+existing localStorage rows and keeps package icons resolvable after reload.
 
 ## Aisle order
 

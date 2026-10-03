@@ -139,10 +139,10 @@ test("shipped snapshot: counts, bySlug coverage, required keys, aisle membership
   ]);
   // Pinned-seed expectations (fail loudly on sync drift, per contract).
   assert.equal(snapshot.ingredients.length, 379);
-  assert.equal(dict.entries.length, 48);
+  assert.equal(dict.entries.length, 50);
   assert.equal(snapshot.ingredients.filter((e) => e.staple === true).length, 23);
   assert.equal(Object.keys(snapshot.bySlug).length, 379);
-  assert.equal(Object.keys(dict.bySlug).length, 48);
+  assert.equal(Object.keys(dict.bySlug).length, 50);
   for (const [index, entry] of snapshot.ingredients.entries()) {
     assert.ok(entry.slug, `missing slug at ${index}`);
     assert.ok(entry.name, `missing name at ${entry.slug}`);

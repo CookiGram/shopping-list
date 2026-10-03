@@ -15,6 +15,7 @@ const PRECACHE = [
   "./css/tokens.css",
   "./css/app.css",
   "./js/app.js",
+  "./js/aisle-filter.js",
   "./js/catalog.js",
   "./js/components.js",
   "./js/history.js",
@@ -26,12 +27,19 @@ const PRECACHE = [
   "./js/voice.js",
   "./data/cookigram-catalog.json",
   "./data/shopping-dict.json",
+  "./data/product-variants.json",
   "./data/dictionary/non-food.fr.json",
   "./data/aisles.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./assets/illustrations/empty-basket.svg",
+  "./assets/icons/eggs-6.svg",
+  "./assets/icons/eggs-12.svg",
+  "./assets/icons/cola-zero-bottle.svg",
+  "./assets/icons/iced-tea-bottle.svg",
+  "./assets/icons/greek-yogurt-4pack.svg",
+  "./assets/icons/greek-yogurt-1kg.svg",
 ];
 
 self.addEventListener("install", (event) => {

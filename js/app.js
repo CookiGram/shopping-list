@@ -117,7 +117,9 @@ const rowIcon = (suggestion) => {
 const rowKey = (suggestion, position) => {
   if (suggestion.kind === "free-add") return "free-add";
   if (suggestion.kind === "tag") return `tag-${normalizeText(suggestion.tag)}`;
-  return suggestion.slug || `row-${position}`;
+  return suggestion.variantId
+    ? `${suggestion.slug}-${suggestion.variantId}`
+    : suggestion.slug || `row-${position}`;
 };
 
 function renderSuggestions() {
@@ -229,6 +231,7 @@ function activateSuggestion(suggestion) {
       addItem({
         name: suggestion.entry?.name ?? suggestion.label,
         slug: suggestion.slug,
+        variantId: suggestion.variantId,
         provenance: { source: provenanceForKind(suggestion.entryKind) },
       });
     }

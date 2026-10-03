@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "canonical_slug": "oeuf",
+      "id": "box-6",
+      "product_label": "Œufs",
+      "label": "boîte de 6",
+      "quantity": 6,
+      "unit": "œufs",
+      "format": "boîte",
+      "icon": "eggs-6.svg",
+      "aliases": ["boîte de 6 œufs", "boite de 6 oeufs", "œufs x6", "oeufs x6"]
+    },
+    {
+      "canonical_slug": "oeuf",
+      "id": "box-12",
+      "product_label": "Œufs",
+      "label": "boîte de 12",
+      "quantity": 12,
+      "unit": "œufs",
+      "format": "boîte",
+      "icon": "eggs-12.svg",
+      "aliases": ["boîte de 12 œufs", "boite de 12 oeufs", "œufs x12", "oeufs x12"]
+    },
+    {
+      "canonical_slug": "yaourt-grec",
+      "id": "pack-4",
+      "label": "pack de 4",
+      "quantity": 4,
+      "unit": "pots",
+      "format": "pack",
+      "icon": "greek-yogurt-4pack.svg",
+      "aliases": ["4 yaourts grecs", "pack yaourt grec"]
+    },
+    {
+      "canonical_slug": "yaourt-grec",
+      "id": "pot-1kg",
+      "label": "pot 1 kg",
+      "quantity": 1,
+      "unit": "kg",
+      "format": "pot",
+      "icon": "greek-yogurt-1kg.svg",
+      "aliases": ["yaourt grec 1 kg", "yaourt grec 1kg", "grand pot yaourt grec"]
+    },
+    {
+      "canonical_slug": "coca-zero",
+      "id": "bottle",
+      "label": "bouteille",
+      "quantity": 1,
+      "unit": "bouteille",
+      "format": "bouteille",
+      "icon": "cola-zero-bottle.svg",
+      "aliases": ["bouteille coca zero", "bouteille cola zero"]
+    },
+    {
+      "canonical_slug": "the-glace",
+      "id": "bottle",
+      "label": "bouteille",
+      "quantity": 1,
+      "unit": "bouteille",
+      "format": "bouteille",
+      "icon": "iced-tea-bottle.svg",
+      "aliases": ["bouteille thé glacé", "bouteille iced tea"]
+    }
+  ]
+}

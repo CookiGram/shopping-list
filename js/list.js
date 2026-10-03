@@ -68,7 +68,12 @@ export function resolveItemMeta(item, catalog) {
     entry?.aisle ||
     (catalog ? defaultAisleForCategory(catalog, category) : FALLBACK_AISLE) ||
     FALLBACK_AISLE;
-  const icon = item?.icon ?? entry?.icon ?? "";
+  const variant = item?.variantId
+    ? (catalog?.variantsByProduct?.[entry?.slug] ?? []).find(
+        (candidate) => candidate.id === item.variantId,
+      )
+    : null;
+  const icon = item?.icon ?? variant?.icon ?? entry?.icon ?? "";
   const tags = item?.tags?.length ? [...item.tags] : [...(entry?.tags ?? [])];
   const aliases = [...(entry?.aliases ?? [])];
   return { aisle, icon, tags, category, kind: found?.kind ?? null, aliases };
