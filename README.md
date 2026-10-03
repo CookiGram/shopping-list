@@ -1,12 +1,12 @@
-# CookiGram Shopping List
+# CookiList
 
-Shopping List est le companion d'achat autonome de l'écosystème CookiGram.
+CookiList est le companion d'achat autonome de l'écosystème CookiGram.
 
 C'est une PWA locale, simple et offline qui doit rester utile même sans CookiGram ni Home.
 
 ## Rôle
 
-Shopping List possède l'expérience d'achat :
+CookiList possède l'expérience d'achat :
 
 - listes ;
 - articles ;
@@ -38,7 +38,7 @@ Home peut enrichir cette expérience avec le partage familial et la synchronisat
 
 CookiGram conserve une capability shopping locale strictement culinaire.
 
-Le développement de Shopping List bénéficie à CookiGram de deux manières.
+Le développement de CookiList bénéficie à CookiGram de deux manières.
 
 ### 1. Amélioration native
 
@@ -51,22 +51,22 @@ Les mécaniques Shopping utiles directement au parcours culinaire peuvent être 
 - persistance locale ;
 - état acheté / restant.
 
-CookiGram devient ainsi meilleur même sans Shopping List.
+CookiGram devient ainsi meilleur même sans CookiList.
 
 ### 2. Arrimage complet
 
-Lorsque Shopping List est présente et arrimée, elle devient le provider shopping actif de CookiGram.
+Lorsque CookiList est présente et arrimée, elle devient le provider shopping actif de CookiGram.
 
 ```text
 CookiGram seul
   -> shopping culinaire local
 
-CookiGram + Shopping List arrimée
-  -> Shopping List remplace la capability shopping native
+CookiGram + CookiList arrimée
+  -> CookiList remplace la capability shopping native
   -> expérience shopping complète
 ```
 
-L'arrimage est réversible : si Shopping List disparaît ou est détachée, CookiGram revient à son fonctionnement local.
+L'arrimage est réversible : si CookiList disparaît ou est détachée, CookiGram revient à son fonctionnement local.
 
 CookiGram reste également capable d'exporter ses besoins vers d'autres services compatibles.
 
@@ -86,11 +86,11 @@ L'interface doit rester légère :
 
 ## Design et iconographie
 
-Shopping List reprend le langage visuel de CookiGram lorsqu'il est pertinent.
+CookiList reprend le langage visuel de CookiGram lorsqu'il est pertinent.
 
 Les icônes culinaires déjà disponibles dans CookiGram doivent être réutilisées plutôt que redessinées sans raison.
 
-Shopping List étend ensuite ce vocabulaire avec ses propres icônes pour les achats hors cuisine, par exemple :
+CookiList étend ensuite ce vocabulaire avec ses propres icônes pour les achats hors cuisine, par exemple :
 
 - entretien ;
 - hygiène ;
@@ -99,11 +99,11 @@ Shopping List étend ensuite ce vocabulaire avec ses propres icônes pour les ac
 - maison ;
 - fournitures diverses.
 
-Ces extensions restent propres à Shopping List. CookiGram n'a pas vocation à embarquer des icônes de détergent ou d'autres catégories sans rapport avec la cuisine.
+Ces extensions restent propres à CookiList. CookiGram n'a pas vocation à embarquer des icônes de détergent ou d'autres catégories sans rapport avec la cuisine.
 
 ## Intention d'achat
 
-Shopping List représente d'abord une intention :
+CookiList représente d'abord une intention :
 
 ```text
 "lait"
@@ -117,7 +117,7 @@ Les futures intégrations distributeurs doivent donc rester découplées du doma
 
 ## Relation avec Home
 
-Avec Home, Shopping List peut gagner :
+Avec Home, CookiList peut gagner :
 
 - partage familial ;
 - synchronisation multi-utilisateur ;
@@ -159,7 +159,8 @@ locale avec tags contextuels, rituel des essentiels
 (valider/rejeter/ignorer le reste), essentiels définis par
 l'utilisateur (jamais imposés par le catalogue), favoris, historique,
 persistance `localStorage`, catalogue culinaire CookiGram versionné +
-pack d'icônes embarqués, sync catalogue nightly via CI (PR, sans
+pack d'icônes embarqués, filtrage par catégorie/rayon et variantes de
+conditionnement sélectionnables, sync catalogue nightly via CI (PR, sans
 auto-merge). Aucune dépendance runtime vers CookiGram ou Home ;
 l'arrimage n'est pas encore implémenté (hors scope v0).
 
@@ -171,3 +172,11 @@ l'arrimage n'est pas encore implémenté (hors scope v0).
 - Limites actuelles : pas de découverte/arrimage, icônes hors cuisine
   en fallback (pas de pack dédié), checklist E2E navigateur à passer
   manuellement (`docs/e2e-checklist.md`).
+
+<!-- cookigram-ecosystem:start -->
+## Écosystème CookiGram
+
+**Ce dépôt :** `shopping-list` porte **CookiList**, le companion d'achat local/offline. Il reste autonome sans compte ni backend ; Home ajoute la synchronisation familiale et CookiGram peut s'y arrimer sans en faire une dépendance.
+
+Repères : [catalogue public](https://github.com/CookiGram/cookigram) · [moteur](https://github.com/CookiGram/cookigram-core) · [contrat](https://github.com/CookiGram/cookigram-contract) · [CookiList](https://github.com/CookiGram/shopping-list) · [Home](https://github.com/CookiGram/home) · [MCP produit](https://github.com/CookiGram/cookigram-mcp) · [Bandleader](https://github.com/CookiGram/Bandleader) · [Orchestra](https://github.com/CookiGram/Orchestra) · [Journey](https://github.com/CookiGram/cookigram-journey).
+<!-- cookigram-ecosystem:end -->
