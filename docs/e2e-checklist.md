@@ -2,14 +2,21 @@
 
 23-step reference scenario mapped to verified-vs-manual status.
 Unit tests run headless with the preinstalled Node runner (no new deps);
-every DOM / PWA / persistence-across-reload / viewport step stays manual.
+`tests/e2e-search-filter.test.mjs` is a REAL browser test (Chrome/Chromium
++ CDP, trusted mouse clicks) for issue #30 R2 — skipped without
+`SHOPPING_CDP`, so CI stays stdlib-only.
 
 ## Run
 
 ```bash
-node --test tests/*.test.mjs   # 111 tests, pure logic (search/store/catalog/ritual/tags/history/list-grouping/essentials/dictionary)
+node --test tests/*.test.mjs   # 209 tests (208 pass + 1 e2e skip sans navigateur)
 python3 -m unittest discover -s tests/sync   # Lane D (sync lane owns it; listed for completeness)
 for f in js/*.js sw.js; do node --check "$f"; done   # syntax smoke gate (covers DOM-only modules)
+# Navigateur réel (optionnel, local) :
+#   python3 -m http.server 8077 &
+#   chromium --headless --no-sandbox --remote-debugging-port=9222 about:blank &
+#   SHOPPING_CDP=http://127.0.0.1:9222 SHOPPING_URL=http://127.0.0.1:8077/index.html \
+#     SHOPPING_SHOTS=/tmp/shots node --test tests/e2e-search-filter.test.mjs
 ```
 
 Environment verified 2026-10-02: `node v22.23.3`, `python3 3.14.7`, no installs.

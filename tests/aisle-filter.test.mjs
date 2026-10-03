@@ -20,8 +20,14 @@ import {
   aisleChip,
   renderAisleBar,
   initAisleBar,
+  aisleOption,
+  renderAislePanel,
+  renderAisleTrigger,
+  initAisleFilter,
   AISLE_CHANGE_EVENT,
   AISLE_BAR_SELECTOR,
+  AISLE_PANEL_SELECTOR,
+  AISLE_TRIGGER_SELECTOR,
   ALL_AISLES_LABEL,
 } from "../js/aisle-filter.js";
 import {
@@ -121,9 +127,15 @@ test("issue #30: sans DOM, les builders dégradent en null", () => {
   assert.equal(aisleChip(null, true), null);
   assert.equal(renderAisleBar(), null);
   assert.equal(initAisleBar({}), null);
+  assert.equal(aisleOption(null, true), null);
+  assert.equal(renderAislePanel({}), null);
+  assert.equal(renderAisleTrigger(undefined, false), null);
+  assert.equal(initAisleFilter({}), null);
   const off = onAisleChange(() => {});
   assert.equal(typeof off, "function");
   off();
   assert.equal(AISLE_CHANGE_EVENT, "shopping-list:aisle-change");
   assert.equal(AISLE_BAR_SELECTOR, "[data-aisle-filter]");
+  assert.equal(AISLE_PANEL_SELECTOR, "[data-aisle-panel]");
+  assert.equal(AISLE_TRIGGER_SELECTOR, "[data-aisle-trigger]");
 });

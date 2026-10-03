@@ -44,7 +44,7 @@ import {
   activateTagFromSuggestion,
   activateTagFromList,
 } from "./tags.js";
-import { initAisleBar, aisleTerm } from "./aisle-filter.js";
+import { initAisleFilter, aisleTerm } from "./aisle-filter.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
@@ -821,10 +821,11 @@ async function boot() {
     },
   });
 
-  // Aisle chips (issue #30): suggestions only — unlike tags, the
-  // aisle filter never narrows the shopping list, and changing it
-  // preserves the typed text (renderSuggestions reads the input).
-  initAisleBar({
+  // Aisle filter (issue #30 R2): discreet trigger + panel, no
+  // permanent row. Suggestions only — unlike tags, the aisle filter
+  // never narrows the shopping list, and changing it preserves the
+  // typed text (renderSuggestions reads the input).
+  initAisleFilter({
     catalog,
     index: searchIndex,
     onChange: () => {
