@@ -37,6 +37,14 @@ import {
   normalizeKey,
 } from "./catalog.js";
 import { checkboxRow, aisleCard, emptyState, parseQtyInt } from "./components.js";
+import {
+  getActiveAisle,
+  isAisleActive,
+  setActiveAisle,
+  toggleAisle,
+  clearAisle,
+  onAisleChange,
+} from "./aisle-filter.js";
 
 export const FALLBACK_AISLE = "À vérifier";
 export const STORE_KEY = "shopping-list:items:v1";
@@ -99,19 +107,25 @@ export function matchQuery(item, meta, query) {
 /**
  * Group items by aisle. Pure (no DOM). `filter` is a predicate
  * (item, meta) => bool or a query string (via matchQuery).
+ * `activeAisle` optionally restricts groups to a single aisle (issue #30 R3).
  * Groups follow catalogAisleOrder; rows sort by FR name, then addedAt.
  * Checked rows stay in place (no jumpiness while shopping).
  */
-export function groupItemsByAisle(items, catalog, filter = null) {
+export function groupItemsByAisle(items, catalog, filter = null, activeAisle = null) {
   const order = catalog ? catalogAisleOrder(catalog) : [FALLBACK_AISLE];
   const groups = new Map();
   const test =
     typeof filter === "function"
       ? filter
       : (item, meta) => matchQuery(item, meta, filter ?? "");
+  const targetAisle =
+    activeAisle !== null && activeAisle !== undefined && String(activeAisle).trim()
+      ? normalizeKey(String(activeAisle).trim())
+      : null;
   for (const item of items ?? []) {
     const meta = resolveItemMeta(item, catalog);
     if (!test(item, meta)) continue;
+    if (targetAisle !== null && normalizeKey(meta.aisle) !== targetAisle) continue;
     if (!groups.has(meta.aisle)) groups.set(meta.aisle, []);
     groups.get(meta.aisle).push({ item, meta });
   }
@@ -256,6 +270,12 @@ function filteredEmptyState(query) {
       ? `Aucun article pour « ${String(query).trim()} ».`
       : "Aucun article dans cette sélection.";
   div.appendChild(p);
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "chip";
+  resetBtn.setAttribute("data-aisle-reset", "");
+  resetBtn.textContent = "Tout afficher";
+  div.appendChild(resetBtn);
   return div;
 }
 
@@ -287,9 +307,13 @@ export function showsStateTitles(activeCount, checkedCount) {
   return activeCount > 0 && checkedCount > 0;
 }
 
-function aisleCards(groups, { iconBase, isFavorite, isEssential }) {
-  return groups.map(([aisle, rows]) =>
-    aisleCard(
+function aisleCards(groups, { iconBase, isFavorite, isEssential }, activeAisle = null) {
+  return groups.map(([aisle, rows]) => {
+    const isActive =
+      activeAisle !== null &&
+      activeAisle !== undefined &&
+      normalizeKey(aisle) === normalizeKey(String(activeAisle).trim());
+    return aisleCard(
       aisle,
       rows.map(({ item, meta }) => {
         let favorite = null;
@@ -306,11 +330,12 @@ function aisleCards(groups, { iconBase, isFavorite, isEssential }) {
         }
         return itemRow(item, meta, { iconBase, favorite, essential });
       }),
-    ),
-  );
+      { isActive },
+    );
+  });
 }
 
-function sectionElement(kind, groups, rowOptions) {
+function sectionElement(kind, groups, rowOptions, activeAisle) {
   const section = document.createElement("section");
   section.className = `list-section list-section--${kind}`;
   section.setAttribute("data-list-section", kind);
@@ -318,17 +343,17 @@ function sectionElement(kind, groups, rowOptions) {
   title.className = "list-section-title";
   title.textContent = SECTION_TITLES[kind] ?? kind;
   section.appendChild(title);
-  for (const card of aisleCards(groups, rowOptions)) section.appendChild(card);
+  for (const card of aisleCards(groups, rowOptions, activeAisle)) section.appendChild(card);
   return section;
 }
 
-function appendStateSection(container, kind, groups, rowOptions, titled) {
+function appendStateSection(container, kind, groups, rowOptions, titled, activeAisle) {
   if (!groups.length) return;
   if (!titled) {
-    for (const card of aisleCards(groups, rowOptions)) container.appendChild(card);
+    for (const card of aisleCards(groups, rowOptions, activeAisle)) container.appendChild(card);
     return;
   }
-  container.appendChild(sectionElement(kind, groups, rowOptions));
+  container.appendChild(sectionElement(kind, groups, rowOptions, activeAisle));
 }
 
 /**
@@ -338,30 +363,31 @@ function appendStateSection(container, kind, groups, rowOptions, titled) {
  * when non-empty and is never collapsible. The section titles only render
  * when both states are present (UX13); a lone state renders bare aisle
  * groups with no redundant title.
- * Options: {filter, query(for the filtered-empty message), iconBase,
+ * Options: {filter, activeAisle, query(for the filtered-empty message), iconBase,
  *           isFavorite: (item) => bool (default: item.favorite),
  *           isEssential: (item) => bool (default: item.essential)}.
  */
 export function renderList(container, items, catalog, options = {}) {
   const {
     filter = null,
-    query = typeof filter === "string" ? filter : "",
+    activeAisle = getActiveAisle(),
+    query = typeof filter === "string" ? filter : activeAisle ?? "",
     iconBase = DEFAULT_ICON_BASE,
     isFavorite = (item) => !!item?.favorite,
     isEssential = (item) => !!item?.essential,
   } = options;
   const list = items ?? [];
   const { active, checked } = splitByChecked(list);
-  const activeGroups = groupItemsByAisle(active, catalog, filter).groups;
-  const checkedGroups = groupItemsByAisle(checked, catalog, filter).groups;
+  const activeGroups = groupItemsByAisle(active, catalog, filter, activeAisle).groups;
+  const checkedGroups = groupItemsByAisle(checked, catalog, filter, activeAisle).groups;
   container.replaceChildren();
   if (!activeGroups.length && !checkedGroups.length) {
     container.appendChild(list.length ? filteredEmptyState(query) : emptyState());
   } else {
     const rowOptions = { iconBase, isFavorite, isEssential };
     const titled = showsStateTitles(activeGroups.length, checkedGroups.length);
-    appendStateSection(container, "active", activeGroups, rowOptions, titled);
-    appendStateSection(container, "checked", checkedGroups, rowOptions, titled);
+    appendStateSection(container, "active", activeGroups, rowOptions, titled, activeAisle);
+    appendStateSection(container, "checked", checkedGroups, rowOptions, titled, activeAisle);
   }
   activateTags(container);
   const rendered =
@@ -535,6 +561,7 @@ export function mountList(container, options = {}) {
     lastItems = await readAll();
     return renderList(container, lastItems, catalog, {
       filter,
+      activeAisle: options.activeAisle !== undefined ? options.activeAisle : getActiveAisle(),
       iconBase,
       isFavorite: isFavoriteFor,
       isEssential: isEssentialFor,
@@ -553,6 +580,25 @@ export function mountList(container, options = {}) {
     toggleCheck(cb.getAttribute("data-item-check"), cb.closest("[data-shopping-item]"), explicitStore, onToggleCheck);
   };
   const onClick = (event) => {
+    const headerBtn = event.target?.closest?.("[data-aisle-header]");
+    if (headerBtn && container.contains(headerBtn)) {
+      const aisle = headerBtn.getAttribute("data-aisle-header");
+      if (typeof options.onAisleHeaderClick === "function") {
+        options.onAisleHeaderClick(aisle, headerBtn);
+      } else {
+        toggleAisle(aisle);
+      }
+      return;
+    }
+    const resetBtn = event.target?.closest?.("[data-aisle-reset]");
+    if (resetBtn && container.contains(resetBtn)) {
+      if (typeof options.onAisleResetClick === "function") {
+        options.onAisleResetClick(resetBtn);
+      } else {
+        clearAisle();
+      }
+      return;
+    }
     const fav = event.target?.closest?.("[data-fav]");
     if (fav && container.contains(fav)) {
       toggleFavorite(fav.getAttribute("data-fav"), fav, cachedStore ?? explicitStore, onToggleFavorite, lookupItem);
@@ -580,6 +626,7 @@ export function mountList(container, options = {}) {
   };
 
   let unsubscribe = null;
+  let unsubscribeAisle = null;
   const ready = (async () => {
     const store = await resolveStore(explicitStore);
     if (typeof store?.subscribe === "function") {
@@ -593,6 +640,7 @@ export function mountList(container, options = {}) {
       document.addEventListener(CHANGE_EVENT, onChange);
       globalThis.window?.addEventListener?.("storage", onStorage);
     }
+    unsubscribeAisle = onAisleChange(() => refresh());
     container.addEventListener("change", onCheckbox);
     container.addEventListener("click", onClick);
     await refresh();
@@ -605,11 +653,26 @@ export function mountList(container, options = {}) {
       filter = typeof next === "function" ? next : next;
       return refresh();
     },
+    setActiveAisle(aisle) {
+      setActiveAisle(aisle);
+      return refresh();
+    },
+    clearAisle() {
+      clearAisle();
+      return refresh();
+    },
     getCatalog: () => catalog,
     unmount() {
       disposed = true;
       container.removeEventListener("change", onCheckbox);
       container.removeEventListener("click", onClick);
+      if (typeof unsubscribeAisle === "function") {
+        try {
+          unsubscribeAisle();
+        } catch {
+          /* noop */
+        }
+      }
       if (typeof unsubscribe === "function") {
         try {
           unsubscribe();

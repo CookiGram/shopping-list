@@ -1,4 +1,4 @@
-/* Shopping List v0 — aisle filter chips (issue #30).
+/* Shopping List v0 — aisle filter (issue #30, R3: list header controls).
  * Single owner of the active-aisle filter. One aisle at most (v1);
  * null means "Tous" (no category filter). Mirrors js/tags.js: DOM-free
  * state + document CustomEvent "shopping-list:aisle-change" with
@@ -7,20 +7,23 @@
  *
  * The aisle vocabulary is the canonical catalog order
  * (catalogAisleOrder) restricted to aisles present in the loaded
- * index — no second taxonomy, no dead chips. Filtering itself reuses
+ * index — no second taxonomy, no dead options. Filtering itself reuses
  * the search.js structured terms ({label, type: "aisle"} pinned to
  * the indexed `aisle` field), so free text and category combine
  * while tags, essentials, recents and favorites keep working.
  *
- * Unlike tags, the aisle filter only narrows search suggestions: it
- * never filters the shopping list itself and never touches the
- * search input (typed text is preserved by construction — this
- * module holds no input reference).
+ * Interaction (R3): the category headers already visible in the shopping
+ * list are the filter controls. Clicking an aisle header filters the
+ * visible list groups to that aisle, leaving stored items intact.
+ * Re-clicking or tapping the reset button clears the filter. Search
+ * suggestions narrow by aisleTerm() when an aisle is active.
+ * The search bar stays clean: no permanent chip row, no popup panel.
  */
 
 import { normalizeText } from "./search.js";
 
 export const AISLE_CHANGE_EVENT = "shopping-list:aisle-change";
+/** @deprecated R1: the permanent chips bar is removed; kept for tests. */
 export const AISLE_BAR_SELECTOR = "[data-aisle-filter]";
 export const ALL_AISLES_LABEL = "Tous";
 
@@ -71,6 +74,17 @@ export const setActiveAisle = (aisle) => {
 export const clearAisle = () => setActiveAisle(null);
 
 /**
+ * Toggle an aisle: if already active, clears the filter;
+ * otherwise activates it.
+ */
+export const toggleAisle = (aisle) => {
+  if (isAisleActive(aisle)) {
+    return clearAisle();
+  }
+  return setActiveAisle(aisle);
+};
+
+/**
  * Structured search term for the active aisle, or null on "Tous".
  * Appended to the suggestion query's structuredTerms next to tag
  * terms — both narrow, free text still applies.
@@ -91,7 +105,7 @@ export const onAisleChange = (listener) => {
 /* ------------------------------------------------------------------ */
 
 /**
- * Chip aisles: canonical catalog order restricted to aisles present
+ * Vocabulary: canonical catalog order restricted to aisles present
  * in the index (or raw entries). Accepts a catalog object (uses
  * catalogAisleOrder when available, else catalog.order), an explicit
  * order array, or nothing (presence order, unsorted).
@@ -133,7 +147,8 @@ export const aisleChips = (catalogOrOrder = null, entriesOrIndex = []) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Bar rendering (Lane-B style builders; needs DOM)                    */
+/* Legacy bar rendering (R1 chips row — superseded by the R2 panel). */
+/* Kept exported for contract tests; the app no longer mounts a bar.  */
 /* ------------------------------------------------------------------ */
 
 const hasDom = () =>
