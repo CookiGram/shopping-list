@@ -115,6 +115,33 @@ test("groupItemsByAisle: checked rows stay in place; filters (predicate + query)
   assert.equal(query.groups.reduce((n, [, rows]) => n + rows.length, 0), 1);
 });
 
+test("groupItemsByAisle: activeAisle filters groups visually, preserves caller storage", () => {
+  const items = [
+    { id: "1", name: "Ail", slug: "ail", checked: false },
+    { id: "2", name: "Farine", slug: "farine", checked: false },
+    { id: "3", name: "Lessive", slug: "lessive", checked: false },
+  ];
+  const all = groupItemsByAisle(items, catalog);
+  assert.equal(all.groups.length, 3);
+
+  const epicerie = groupItemsByAisle(items, catalog, null, "Épicerie");
+  assert.equal(epicerie.groups.length, 1);
+  assert.equal(epicerie.groups[0][0], "Épicerie");
+  assert.equal(epicerie.groups[0][1][0].item.name, "Farine");
+  assert.equal(items.length, 3);
+
+  const maison = groupItemsByAisle(items, catalog, null, "Maison & entretien");
+  assert.equal(maison.groups.length, 1);
+  assert.equal(maison.groups[0][0], "Maison & entretien");
+  assert.equal(maison.groups[0][1][0].item.name, "Lessive");
+
+  const none = groupItemsByAisle(items, catalog, null, "Inconnu");
+  assert.equal(none.groups.length, 0);
+
+  const reset = groupItemsByAisle(items, catalog, null, null);
+  assert.equal(reset.groups.length, 3);
+});
+
 test("groupItemsByAisle: null-safe (null catalog, null items)", () => {
   const { groups } = groupItemsByAisle(
     [{ id: "1", name: "Truc" }],

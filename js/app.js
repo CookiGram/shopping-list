@@ -44,7 +44,7 @@ import {
   activateTagFromSuggestion,
   activateTagFromList,
 } from "./tags.js";
-import { initAisleFilter, aisleTerm } from "./aisle-filter.js";
+import { aisleTerm, onAisleChange } from "./aisle-filter.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
@@ -821,16 +821,10 @@ async function boot() {
     },
   });
 
-  // Aisle filter (issue #30 R2): discreet trigger + panel, no
-  // permanent row. Suggestions only — unlike tags, the aisle filter
-  // never narrows the shopping list, and changing it preserves the
-  // typed text (renderSuggestions reads the input).
-  initAisleFilter({
-    catalog,
-    index: searchIndex,
-    onChange: () => {
-      renderSuggestions();
-    },
+  // Aisle filter (issue #30 R3): aisle headers in the list are the controls.
+  // When an aisle is active, search suggestions narrow by aisleTerm() as well.
+  onAisleChange(() => {
+    renderSuggestions();
   });
 
   // List-row tag taps (list.js dispatches, cancelable) share the single

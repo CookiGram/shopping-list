@@ -30,15 +30,6 @@
             placeholder="Ajouter un ingrédient… (ex. ail, beurre)"
             aria-label="Rechercher et ajouter un ingrédient" autocomplete="off"
             role="combobox" aria-expanded="false" aria-controls="shopping-suggestions">
-          <button type="button" class="aisle-filter-trigger" id="shopping-aisle-filter"
-            data-aisle-trigger
-            aria-label="Filtrer par rayon" title="Filtrer par rayon"
-            aria-haspopup="true" aria-expanded="false" aria-controls="shopping-aisle-panel">
-            <svg class="aisle-filter-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span class="aisle-filter-dot" aria-hidden="true"></span>
-          </button>
           <button type="button" class="voice-trigger" id="shopping-voice"
             aria-label="Dicter des articles" title="Dicter des articles" hidden>
             <svg class="voice-mic-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -52,8 +43,6 @@
         </div>
         <ul id="shopping-suggestions" class="search-suggestions"
           role="listbox" aria-label="Suggestions d'ingrédients" hidden></ul>
-        <div class="aisle-panel" id="shopping-aisle-panel" data-aisle-panel role="dialog"
-          aria-label="Filtrer par rayon" hidden></div>
 
         <div class="voice-review" id="voice-review" aria-live="polite" hidden>
           <div class="voice-review-head">

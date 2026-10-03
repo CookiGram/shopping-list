@@ -3,7 +3,7 @@
 23-step reference scenario mapped to verified-vs-manual status.
 Unit tests run headless with the preinstalled Node runner (no new deps);
 `tests/e2e-search-filter.test.mjs` is a REAL browser test (Chrome/Chromium
-+ CDP, trusted mouse clicks) for issue #30 R2 — skipped without
++ CDP, trusted mouse clicks) for issue #30 R3 — skipped without
 `SHOPPING_CDP`, so CI stays stdlib-only.
 
 ## Run

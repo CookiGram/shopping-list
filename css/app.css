@@ -402,110 +402,10 @@ main {
  * et éviter toute résurrection accidentelle du sélecteur. */
 /* .aisle-chips — removed: no permanent category row (see .aisle-panel). */
 
-/* Issue #30 R2 : filtre rayon discret intégré à la barre de
- * recherche. Aucune taxonomie visible au repos : un déclencheur
- * compact ouvre un panneau contextuel. Le point actif reste discret
- * (pastille) et le panneau reste dans la carte, sans overflow. */
-.aisle-filter-trigger {
-  position:relative;
-  flex:none;
-  display:inline-grid;
-  place-items:center;
-  width:44px;
-  height:44px;
-  border:0;
-  border-radius:var(--radius-full);
-  background:transparent;
-  color:var(--muted);
-  cursor:pointer;
-}
+/* Issue #30 R3: aucune rangée permanente de catégories sous la recherche,
+ * aucun panneau dans la barre. Les en-têtes de rayons dans la liste portent
+ * le filtrage (voir .aisle-header-button ci-dessous). */
 
-.aisle-filter-trigger:hover {
-  background:var(--cream);
-  color:var(--ink);
-}
-
-.aisle-filter-icon {
-  display:block;
-  width:22px;
-  height:22px;
-}
-
-.aisle-filter-dot {
-  position:absolute;
-  right:9px;
-  bottom:9px;
-  width:8px;
-  height:8px;
-  border-radius:var(--radius-full);
-  background:transparent;
-  pointer-events:none;
-}
-
-.aisle-filter-trigger[data-active] {
-  color:var(--green);
-}
-
-.aisle-filter-trigger[data-active] .aisle-filter-dot {
-  background:var(--green);
-}
-
-.aisle-panel {
-  position:absolute;
-  z-index:30;
-  top:calc(100% + var(--space-2));
-  left:0;
-  right:0;
-  max-height:50dvh;
-  overflow:auto;
-  margin:0;
-  padding:var(--space-2);
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:var(--radius-md);
-  box-shadow:var(--shadow);
-  overscroll-behavior:contain;
-}
-
-.aisle-panel-list {
-  display:grid;
-  gap:var(--space-1);
-  margin:0;
-  padding:0;
-  list-style:none;
-}
-
-.aisle-option {
-  display:flex;
-  align-items:center;
-  width:100%;
-  min-height:44px;
-  padding:var(--space-2) var(--space-3);
-  border:1px solid transparent;
-  border-radius:var(--radius-md);
-  background:transparent;
-  color:var(--ink);
-  font:inherit;
-  font-size:.95rem;
-  text-align:left;
-  cursor:pointer;
-}
-
-.aisle-option:hover {
-  background:var(--cream);
-  border-color:var(--line);
-}
-
-.aisle-option[aria-pressed="true"] {
-  background:var(--green);
-  border-color:var(--green);
-  color:#fff;
-}
-
-.aisle-option:focus-visible {
-  outline:2px solid var(--orange);
-  outline-offset:2px;
-}
 
 /* Essentials ritual: per-chip "not this time" + global "ignore rest". */
 #essentials-chips li { display:inline-flex; align-items:center; gap:var(--space-1); }
@@ -567,6 +467,89 @@ main {
   padding-bottom:var(--space-1);
   border-bottom:1px solid var(--line);
   font-size:1.02rem;
+}
+
+/* Issue #30 R3: les en-têtes de rayon dans la liste deviennent les
+ * contrôles de filtrage. Cliquer sur un rayon filtre la liste sur
+ * ce rayon. Reset minimal via re-clic ou bouton "Tout afficher". */
+.shopping-group-title {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+}
+
+.aisle-header-button {
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-2);
+  min-height:44px;
+  padding:var(--space-1) var(--space-2);
+  margin:-1px 0 -1px calc(-1 * var(--space-2));
+  border:0;
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-size:inherit;
+  font-weight:inherit;
+  text-align:left;
+  cursor:pointer;
+  transition:background .15s ease, color .15s ease;
+}
+
+.aisle-header-button:hover {
+  background:var(--cream);
+}
+
+.aisle-header-button:focus-visible {
+  outline:2px solid var(--orange);
+  outline-offset:2px;
+}
+
+.aisle-header-button.is-active {
+  color:var(--green);
+  font-weight:600;
+}
+
+.aisle-header-button .aisle-header-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 8px;
+  border-radius:var(--radius-full);
+  background:var(--green);
+  color:#fff;
+  font-size:.78rem;
+  font-weight:600;
+  line-height:1.2;
+}
+
+.aisle-reset-button {
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:var(--space-1) var(--space-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  font-size:.82rem;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.aisle-reset-button:hover {
+  background:var(--cream);
+  color:var(--ink);
+  border-color:var(--ink);
+}
+
+.aisle-reset-button:focus-visible {
+  outline:2px solid var(--orange);
+  outline-offset:2px;
 }
 
 .shopping-group-items {

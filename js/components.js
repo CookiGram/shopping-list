@@ -134,11 +134,44 @@ export function quantityChip(bucketId, label, done = false) {
   return chip;
 }
 
-/** Aisle group card: <section> + <h3> + <ul>. Flat, transparent (CookiGram). */
-export function aisleCard(aisle, rows = []) {
-  const section = el("section", "shopping-group", { "data-aisle": aisle });
-  const h3 = el("h3");
-  h3.textContent = aisle;
+/** Aisle group card: <section> + <h3> + <ul>. Flat, transparent (CookiGram).
+ * Issue #30 (R3): aisle headers in the list are interactive filter controls.
+ * Clicking filters the list on this aisle. When active, aria-pressed is true,
+ * an active badge is shown, and a minimal reset button is provided.
+ */
+export function aisleCard(aisle, rows = [], options = {}) {
+  const { isActive = false } = typeof options === "boolean" ? { isActive: options } : options;
+  const section = el("section", "shopping-group" + (isActive ? " shopping-group--active" : ""), { "data-aisle": aisle });
+  const h3 = el("h3", "shopping-group-title");
+  const btn = el("button", "aisle-header-button" + (isActive ? " is-active" : ""), {
+    type: "button",
+    "data-aisle-header": aisle,
+    "aria-pressed": isActive ? "true" : "false",
+    "aria-label": isActive
+      ? `Filtre actif : ${aisle}. Cliquer pour afficher tous les rayons.`
+      : `Filtrer par rayon ${aisle}`,
+  });
+  const nameSpan = el("span", "aisle-header-name");
+  nameSpan.textContent = aisle;
+  btn.appendChild(nameSpan);
+  if (isActive) {
+    const badge = el("span", "aisle-header-badge", { "aria-hidden": "true" });
+    badge.textContent = "Filtre actif ✕";
+    btn.appendChild(badge);
+  }
+  h3.appendChild(btn);
+
+  if (isActive) {
+    const resetBtn = el("button", "aisle-reset-button", {
+      type: "button",
+      "data-aisle-reset": "",
+      "aria-label": "Afficher tous les rayons",
+      title: "Afficher tous les rayons",
+    });
+    resetBtn.textContent = "Tout afficher";
+    h3.appendChild(resetBtn);
+  }
+
   const ul = el("ul", "shopping-group-items");
   for (const row of rows) ul.appendChild(row);
   section.append(h3, ul);
