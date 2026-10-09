@@ -397,20 +397,15 @@ main {
 .chip .chip-add { color:var(--accent-text); font-weight:700; }
 .chip[aria-pressed="true"] .chip-add { color:#fff; }
 
-/* Issue #30 : rangée de filtres catégorie. Réutilise .chip ; le
- * modificateur --scroll garde une seule rangée en scroll horizontal
- * au lieu de casser le layout (mobile-first). */
-.aisle-chips {
-  margin-top:var(--space-2);
-}
-.chip-row--scroll {
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  scrollbar-width:thin;
-  -webkit-overflow-scrolling:touch;
-  padding-bottom:var(--space-1);
-}
-.chip-row--scroll > li { flex:none; }
+/* Issue #30 R1 (rangée permanente de chips) : supprimée. La règle
+ * historique est conservée vide pour documenter le retrait volontaire
+ * et éviter toute résurrection accidentelle du sélecteur. */
+/* .aisle-chips — removed: no permanent category row (see .aisle-panel). */
+
+/* Issue #30 R3: aucune rangée permanente de catégories sous la recherche,
+ * aucun panneau dans la barre. Les en-têtes de rayons dans la liste portent
+ * le filtrage (voir .aisle-header-button ci-dessous). */
+
 
 /* Essentials ritual: per-chip "not this time" + global "ignore rest". */
 #essentials-chips li { display:inline-flex; align-items:center; gap:var(--space-1); }
@@ -472,6 +467,89 @@ main {
   padding-bottom:var(--space-1);
   border-bottom:1px solid var(--line);
   font-size:1.02rem;
+}
+
+/* Issue #30 R3: les en-têtes de rayon dans la liste deviennent les
+ * contrôles de filtrage. Cliquer sur un rayon filtre la liste sur
+ * ce rayon. Reset minimal via re-clic ou bouton "Tout afficher". */
+.shopping-group-title {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+}
+
+.aisle-header-button {
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-2);
+  min-height:44px;
+  padding:var(--space-1) var(--space-2);
+  margin:-1px 0 -1px calc(-1 * var(--space-2));
+  border:0;
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-size:inherit;
+  font-weight:inherit;
+  text-align:left;
+  cursor:pointer;
+  transition:background .15s ease, color .15s ease;
+}
+
+.aisle-header-button:hover {
+  background:var(--cream);
+}
+
+.aisle-header-button:focus-visible {
+  outline:2px solid var(--orange);
+  outline-offset:2px;
+}
+
+.aisle-header-button.is-active {
+  color:var(--green);
+  font-weight:600;
+}
+
+.aisle-header-button .aisle-header-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 8px;
+  border-radius:var(--radius-full);
+  background:var(--green);
+  color:#fff;
+  font-size:.78rem;
+  font-weight:600;
+  line-height:1.2;
+}
+
+.aisle-reset-button {
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:var(--space-1) var(--space-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  font-size:.82rem;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.aisle-reset-button:hover {
+  background:var(--cream);
+  color:var(--ink);
+  border-color:var(--ink);
+}
+
+.aisle-reset-button:focus-visible {
+  outline:2px solid var(--orange);
+  outline-offset:2px;
 }
 
 .shopping-group-items {

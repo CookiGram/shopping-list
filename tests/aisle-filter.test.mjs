@@ -12,6 +12,7 @@ import {
   getActiveAisle,
   setActiveAisle,
   clearAisle,
+  toggleAisle,
   isAisleActive,
   aisleTerm,
   aisleChips,
@@ -113,6 +114,22 @@ test("issue #30: tassement/robustesse des entrées bizarres", () => {
     aisleChips(["  Épicerie "], [{ entry: { aisle: "épicerie" } }]),
     ["Épicerie"],
   );
+});
+
+test("issue #30 R3: toggleAisle bascule entre le rayon et Tous", () => {
+  clearAisle();
+  assert.equal(getActiveAisle(), null);
+  toggleAisle("Épicerie");
+  assert.equal(getActiveAisle(), "Épicerie");
+  // Re-toggling the same active aisle toggles it off
+  toggleAisle("Épicerie");
+  assert.equal(getActiveAisle(), null);
+  // Switching to a different aisle sets the new aisle
+  toggleAisle("Fruits & légumes");
+  assert.equal(getActiveAisle(), "Fruits & légumes");
+  toggleAisle("Maison & entretien");
+  assert.equal(getActiveAisle(), "Maison & entretien");
+  clearAisle();
 });
 
 test("issue #30: sans DOM, les builders dégradent en null", () => {
