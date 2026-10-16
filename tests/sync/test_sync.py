@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -338,6 +339,36 @@ class WriteAndCliTests(unittest.TestCase):
                 json.loads(out.read_text(encoding="utf-8")), catalog)
             leftovers = [p for p in Path(tmp).rglob("*") if p.is_file()]
             self.assertEqual(leftovers, [out])  # no tmp files left behind
+
+    def test_sync_cli_network_fetches_pinned_provenance(self):
+        raw_base = "https://example.invalid/cookigram"
+        ingredients_url = f"{raw_base}/{REF}/{sync.INGREDIENTS_PATH}"
+        provenance_url = f"{raw_base}/{REF}/{sync.PROVENANCE_PATH}"
+        fixtures = {
+            ingredients_url: INGREDIENTS_YAML.encode("utf-8"),
+            provenance_url: PROVENANCE_YAML.encode("utf-8"),
+        }
+        observed = []
+
+        def fake_fetch(url):
+            observed.append(url)
+            if url not in fixtures:
+                raise AssertionError(f"unexpected URL: {url}")
+            return fixtures[url]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "catalog.json"
+            args = sync.build_parser().parse_args([
+                "sync", "--ref", REF, "--raw-base", raw_base,
+                "--fetched-at", FETCHED, "--out", str(out),
+            ])
+            with mock.patch.object(sync, "fetch_bytes", side_effect=fake_fetch):
+                self.assertEqual(sync.cmd_sync(args), 0)
+            self.assertEqual(observed, [ingredients_url, provenance_url])
+            catalog = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(catalog["meta"]["source"]["ref"], REF)
+            self.assertEqual(catalog["meta"]["source"]["files"][sync.PROVENANCE_PATH]["sha256"],
+                             sync.sha256_hex(PROVENANCE_YAML.encode("utf-8")))
 
     def test_sync_cli_offline_with_local_files(self):
         with tempfile.TemporaryDirectory() as tmp:
