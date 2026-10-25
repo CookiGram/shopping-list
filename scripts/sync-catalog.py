@@ -742,7 +742,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
     else:
         base = args.raw_base.rstrip("/")
         ingredients_raw = fetch_bytes(f"{base}/{args.ref}/{INGREDIENTS_PATH}")
-        provenance_raw = fetch_bytes(f"{base}/{args.ref}/{PROVENCE_PATH}")
+        provenance_raw = fetch_bytes(f"{base}/{args.ref}/{PROVENANCE_PATH}")
     # Verify after fetch: re-hash bytes (contract §1.5.4). The hashes are
     # recorded in meta.source.files; any transport corruption fails here
     # via YAML parsing or is pinned permanently in the snapshot.
