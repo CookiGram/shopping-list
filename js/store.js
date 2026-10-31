@@ -239,7 +239,16 @@ const normalizeProvenance = (provenance, slug) => {
   if (!PROVENANCE_SOURCES.includes(source)) {
     throw new Error(`store: unknown provenance source ${JSON.stringify(source)}`);
   }
-  return { source };
+  const recipes = Array.isArray(provenance?.recipes) ? provenance.recipes
+    .filter((recipe) => recipe && typeof recipe.id === "string" && typeof recipe.name === "string")
+    .slice(0, 10)
+    .map((recipe) => ({
+      id: recipe.id.slice(0, 120),
+      name: recipe.name.trim().slice(0, 120),
+      ...(typeof recipe.url === "string" && recipe.url.startsWith("https://cookigram.github.io/")
+        ? { url: recipe.url.slice(0, 500) } : {}),
+    })) : [];
+  return { source, ...(recipes.length ? { recipes } : {}) };
 };
 
 /** All current-list items, in insertion order (copies; mutate via setters). */

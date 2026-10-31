@@ -47,7 +47,8 @@ working. Tests may inject a backend via
   qty: "3 gousses",       // quantity string, "" when unspecified
   checked: false,
   addedAt: 1727745600000,
-  provenance: {source: "cookigram"} // "cookigram" | "dict" | "custom"
+  provenance: {source: "cookigram", recipes: [{id, name, url?}]}
+                              // source: "cookigram" | "dict" | "custom"
 }
 ```
 
@@ -58,6 +59,11 @@ custom` — so the app lane MUST pass `{source: "dict"}` explicitly
 for household entries. Unknown sources throw. Re-adds (history,
 favorites, ritual) preserve the original provenance; the re-add
 path is never recorded as a source.
+For CookiGram transfers, optional `provenance.recipes` preserves recipe
+references (`id`, `name`, and an optional HTTPS CookiGram Pages URL). It is
+metadata only; standalone CookiList does not require or fetch CookiGram.
+The transfer boundary is versioned in
+[cookigram-transfer-v1.md](cookigram-transfer-v1.md).
 
 ## `js/store.js` API
 

@@ -849,6 +849,18 @@ main {
 }
 
 /* ---- Empty state / footer / toast ---- */
+.transfer-review {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+.transfer-review > p:first-of-type { margin: 0 0 8px; font-size: 1.05rem; }
+.transfer-review ul { max-height: 12rem; overflow: auto; padding-left: 1.25rem; }
+.transfer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.transfer-actions button { min-height: 44px; padding: 8px 14px; }
+.transfer-review [role="status"] { min-height: 1.4em; }
 .empty-state {
   text-align:center;
   color:var(--muted);

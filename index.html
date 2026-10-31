@@ -22,6 +22,17 @@
     </header>
 
     <main>
+      <section class="transfer-review" id="transfer-review" aria-labelledby="transfer-title" hidden>
+        <p id="transfer-title"><strong>Articles reçus de CookiGram</strong></p>
+        <p id="transfer-summary"></p>
+        <ul id="transfer-items"></ul>
+        <div class="transfer-actions">
+          <button type="button" id="transfer-cancel">Annuler</button>
+          <button type="button" id="transfer-confirm">Ajouter à ma liste</button>
+          <button type="button" id="transfer-undo" hidden>Annuler l’ajout</button>
+        </div>
+        <p id="transfer-status" role="status" aria-live="polite"></p>
+      </section>
       <!-- Lane mount: search bar + suggestions (search lane owns behavior) -->
       <section class="search-section" id="searchbar" aria-label="Rechercher un ingrédient">
         <div class="search-bar">
