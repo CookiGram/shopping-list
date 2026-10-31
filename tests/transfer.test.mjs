@@ -11,10 +11,14 @@ const payload = (overrides = {}) => ({
     recipe: { id: "ratatouille", name: "Ratatouille", url: "https://cookigram.github.io/cookigram/recettes/ratatouille/" } }],
   ...overrides,
 });
-const storage = () => {
+const storage = ({ failSet = () => false } = {}) => {
   const values = new Map();
   return { getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, String(value)), values };
+    setItem: (key, value) => {
+      if (failSet(key, String(value))) throw new Error("QuotaExceededError");
+      values.set(key, String(value));
+    },
+    removeItem: (key) => values.delete(key), values };
 };
 const base64url = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
@@ -58,12 +62,6 @@ test("transfer fragment decodes v1 payload and validates its provenance origin",
 test("transfer is additive, deduped, idempotent, and undo removes only its untouched additions", () => {
   const db = storage();
   const items = [{ id: "existing", name: "Lait", qty: "1 l", addedAt: 1 }];
-  let id = 0;
-  const add = (data) => {
-    const item = { ...data, id: `new-${++id}`, addedAt: id };
-    items.push(item);
-    return item;
-  };
   const remove = (itemId) => {
     const index = items.findIndex((item) => item.id === itemId);
     if (index < 0) return false;
@@ -72,13 +70,13 @@ test("transfer is additive, deduped, idempotent, and undo removes only its untou
   };
   const result = applyTransfer(payload({ items: [
     { name: "Lait", qty: "1 l" }, payload().items[0],
-  ] }), { storage: db, getCurrentItems: () => [...items], add });
+  ] }), { storage: db, getCurrentItems: () => items });
   assert.equal(result.added.length, 1);
   assert.equal(result.skipped, 1);
   assert.equal(items[0].name, "Lait");
   assert.equal(items[1].provenance.recipes[0].id, "ratatouille");
   assert.equal(applyTransfer(payload({ items: [payload().items[0]] }), {
-    storage: db, getCurrentItems: () => items, add,
+    storage: db, getCurrentItems: () => items,
   }).alreadyApplied, true);
   assert.equal(undoTransfer(payload().transferId, { storage: db,
     getCurrentItems: () => items, remove }), 1);
@@ -89,12 +87,47 @@ test("transfer is additive, deduped, idempotent, and undo removes only its untou
 test("undo preserves a transfer item edited after import", () => {
   const db = storage();
   const items = [];
-  const add = (data) => { const item = { ...data, id: "new", addedAt: 5 }; items.push(item); return item; };
-  applyTransfer(payload(), { storage: db, getCurrentItems: () => items, add });
+  applyTransfer(payload(), { storage: db, getCurrentItems: () => items });
   items[0].addedAt = 6;
   assert.equal(undoTransfer(payload().transferId, { storage: db, getCurrentItems: () => items,
     remove: () => { items.length = 0; return true; } }), 0);
   assert.equal(items.length, 1);
+});
+
+test("quota failure cannot leave a partial list or ledger and the transfer can be retried", () => {
+  let rejectFarine = true;
+  const db = storage({ failSet: (key, value) => key === "shopping-list:items:v1"
+    && rejectFarine && value.includes("Farine") });
+  const items = [];
+  const transfer = payload({ items: [{ name: "Ail", qty: "2 gousses" }, { name: "Farine", qty: "500 g" }] });
+
+  assert.throws(() => applyTransfer(transfer, { storage: db, getCurrentItems: () => items }), /QuotaExceededError/);
+  assert.deepEqual(items, []);
+  assert.equal(db.getItem("shopping-list:items:v1"), null);
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY), null);
+
+  rejectFarine = false;
+  const result = applyTransfer(transfer, { storage: db, getCurrentItems: () => items });
+  assert.equal(result.added.length, 2);
+  assert.equal(items.length, 2);
+  assert.ok(db.getItem(TRANSFER_LEDGER_KEY));
+});
+
+test("ledger quota failure rolls back the list and leaves the transfer retryable", () => {
+  let rejectLedger = true;
+  const db = storage({ failSet: (key) => key === TRANSFER_LEDGER_KEY && rejectLedger });
+  const items = [];
+  const transfer = payload();
+
+  assert.throws(() => applyTransfer(transfer, { storage: db, getCurrentItems: () => items }), /QuotaExceededError/);
+  assert.deepEqual(items, []);
+  assert.equal(db.getItem("shopping-list:items:v1"), null);
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY), null);
+
+  rejectLedger = false;
+  assert.equal(applyTransfer(transfer, { storage: db, getCurrentItems: () => items }).added.length, 1);
+  assert.equal(items.length, 1);
+  assert.ok(db.getItem(TRANSFER_LEDGER_KEY));
 });
 
 test("receiver module is precached for the local offline path", async () => {

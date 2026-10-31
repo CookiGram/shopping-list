@@ -1,5 +1,5 @@
 /* CookiGram → CookiList explicit transfer receiver, contract v1. */
-import { getItems, addItem, removeItem } from "./store.js";
+import { STORE_KEYS, getItems, createId, normalizeName, emitStoreChange, removeItem } from "./store.js";
 
 export const TRANSFER_TYPE = "cookigram.shopping-transfer";
 export const TRANSFER_LEDGER_KEY = "shopping-list:cookigram-transfers:v1";
@@ -74,30 +74,57 @@ const getLedger = (storage) => {
   } catch { return {}; }
 };
 
-const normalized = (value) => String(value ?? "").normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-
 export const applyTransfer = (transfer, {
   storage = globalThis.localStorage,
   getCurrentItems = getItems,
-  add = addItem,
 } = {}) => {
   const safe = validateTransfer(transfer);
   const ledger = getLedger(storage);
   if (ledger[safe.transferId]) return { alreadyApplied: true, added: [], skipped: safe.items.length };
+  const previousItems = storage.getItem(STORE_KEYS.items);
+  const currentItems = getCurrentItems();
+  const nextItems = [...currentItems];
   const added = [];
   let skipped = 0;
   for (const entry of safe.items) {
-    const duplicate = getCurrentItems().some((item) => normalized(item.name) === normalized(entry.name)
+    const duplicate = nextItems.some((item) => normalizeName(item.name) === normalizeName(entry.name)
       && String(item.qty ?? "").trim().replace(/\s+/g, " ") === entry.qty);
     if (duplicate) { skipped++; continue; }
-    const item = add({ name: entry.name, qty: entry.qty, slug: entry.slug,
-      provenance: { source: "cookigram", ...(entry.recipe ? { recipes: [entry.recipe] } : {}) } });
-    if (item?.id) added.push({ id: item.id, item });
-    else skipped++;
+    const item = {
+      id: createId(),
+      slug: entry.slug,
+      name: entry.name,
+      qty: entry.qty,
+      checked: false,
+      addedAt: Date.now(),
+      provenance: { source: "cookigram", ...(entry.recipe ? { recipes: [{
+        id: entry.recipe.id.slice(0, 120),
+        name: entry.recipe.name.trim().slice(0, 120),
+        ...(entry.recipe.url ? { url: entry.recipe.url.slice(0, 500) } : {}),
+      }] } : {}) },
+    };
+    nextItems.push(item);
+    added.push({ id: item.id, item });
   }
+
+  // One list write prevents quota failures from leaving a prefix of the import.
+  // The ledger follows only after the list commit; if that write fails, restore
+  // the original list so the same transfer remains safe to retry.
+  if (added.length) storage.setItem(STORE_KEYS.items, JSON.stringify(nextItems));
   ledger[safe.transferId] = { added, completedAt: Date.now() };
-  storage.setItem(TRANSFER_LEDGER_KEY, JSON.stringify(ledger));
+  try {
+    storage.setItem(TRANSFER_LEDGER_KEY, JSON.stringify(ledger));
+  } catch (error) {
+    try {
+      if (previousItems === null) storage.removeItem(STORE_KEYS.items);
+      else storage.setItem(STORE_KEYS.items, previousItems);
+    } catch (rollbackError) {
+      throw new AggregateError([error, rollbackError], "Transfer ledger write failed and list rollback failed");
+    }
+    throw error;
+  }
+  currentItems.splice(0, currentItems.length, ...nextItems);
+  for (const { id } of added) emitStoreChange("items:add", { id });
   return { alreadyApplied: false, added, skipped };
 };
 
