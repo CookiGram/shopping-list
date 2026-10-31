@@ -36,6 +36,9 @@ Home peut enrichir cette expérience avec le partage familial et la synchronisat
 
 ## Relation avec CookiGram
 
+Le [contrat de navigation companion](docs/companion-navigation-contract.md)
+résume l'UX acceptée et l'interface actuellement observée.
+
 CookiGram conserve une capability shopping locale strictement culinaire.
 
 Le développement de CookiList bénéficie à CookiGram de deux manières.
