@@ -1,5 +1,8 @@
 /* CookiGram → CookiList explicit transfer receiver, contract v1. */
-import { STORE_KEYS, getItems, createId, normalizeName, emitStoreChange, removeItem } from "./store.js";
+import {
+  STORE_KEYS, getItems, createId, normalizeName, frequencySnapshotAfterAdds,
+  emitStoreChange, removeItem,
+} from "./store.js";
 
 export const TRANSFER_TYPE = "cookigram.shopping-transfer";
 export const TRANSFER_LEDGER_KEY = "shopping-list:cookigram-transfers:v1";
@@ -67,9 +70,21 @@ export const parseTransferHash = (hash) => {
   return validateTransfer(parsed);
 };
 
-const getLedger = (storage) => {
+const parseLedger = (raw) => {
   try {
-    const value = JSON.parse(storage.getItem(TRANSFER_LEDGER_KEY) || "{}");
+    const value = JSON.parse(raw || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+};
+
+const getLedger = (storage) => {
+  try { return parseLedger(storage.getItem(TRANSFER_LEDGER_KEY)); }
+  catch { return {}; }
+};
+
+const parseFrequency = (raw) => {
+  try {
+    const value = JSON.parse(raw || "{}");
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch { return {}; }
 };
@@ -79,9 +94,11 @@ export const applyTransfer = (transfer, {
   getCurrentItems = getItems,
 } = {}) => {
   const safe = validateTransfer(transfer);
-  const ledger = getLedger(storage);
+  const previousLedger = storage.getItem(TRANSFER_LEDGER_KEY);
+  const ledger = parseLedger(previousLedger);
   if (ledger[safe.transferId]) return { alreadyApplied: true, added: [], skipped: safe.items.length };
   const previousItems = storage.getItem(STORE_KEYS.items);
+  const previousFrequency = storage.getItem(STORE_KEYS.frequency);
   const currentItems = getCurrentItems();
   const nextItems = [...currentItems];
   const added = [];
@@ -107,19 +124,40 @@ export const applyTransfer = (transfer, {
     added.push({ id: item.id, item });
   }
 
-  // One list write prevents quota failures from leaving a prefix of the import.
-  // The ledger follows only after the list commit; if that write fails, restore
-  // the original list so the same transfer remains safe to retry.
-  if (added.length) storage.setItem(STORE_KEYS.items, JSON.stringify(nextItems));
+  const nextFrequency = frequencySnapshotAfterAdds(
+    added.map(({ item }) => ({ name: item.name, slug: item.slug })),
+    parseFrequency(previousFrequency),
+  );
   ledger[safe.transferId] = { added, completedAt: Date.now() };
+  const previousValues = new Map([
+    [STORE_KEYS.items, previousItems],
+    [TRANSFER_LEDGER_KEY, previousLedger],
+    [STORE_KEYS.frequency, previousFrequency],
+  ]);
+  const writes = [
+    ...(added.length ? [[STORE_KEYS.items, JSON.stringify(nextItems)]] : []),
+    [TRANSFER_LEDGER_KEY, JSON.stringify(ledger)],
+    ...(added.length ? [[STORE_KEYS.frequency, JSON.stringify(nextFrequency)]] : []),
+  ];
+  const attempted = [];
   try {
-    storage.setItem(TRANSFER_LEDGER_KEY, JSON.stringify(ledger));
+    for (const [key, value] of writes) {
+      attempted.push(key);
+      storage.setItem(key, value);
+    }
   } catch (error) {
-    try {
-      if (previousItems === null) storage.removeItem(STORE_KEYS.items);
-      else storage.setItem(STORE_KEYS.items, previousItems);
-    } catch (rollbackError) {
-      throw new AggregateError([error, rollbackError], "Transfer ledger write failed and list rollback failed");
+    const rollbackErrors = [];
+    for (const key of attempted.reverse()) {
+      try {
+        const previousValue = previousValues.get(key);
+        if (previousValue == null) storage.removeItem(key);
+        else storage.setItem(key, previousValue);
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    }
+    if (rollbackErrors.length) {
+      throw new AggregateError([error, ...rollbackErrors], "Transfer write failed and storage rollback was incomplete");
     }
     throw error;
   }

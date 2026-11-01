@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { applyTransfer, parseTransferHash, undoTransfer, validateTransfer, TRANSFER_LEDGER_KEY } from "../js/transfer.js";
+import { STORE_KEYS, configureStore, getFrequency, getItems } from "../js/store.js";
 import { readFile } from "node:fs/promises";
 
 const payload = (overrides = {}) => ({
@@ -61,27 +62,27 @@ test("transfer fragment decodes v1 payload and validates its provenance origin",
 
 test("transfer is additive, deduped, idempotent, and undo removes only its untouched additions", () => {
   const db = storage();
-  const items = [{ id: "existing", name: "Lait", qty: "1 l", addedAt: 1 }];
-  const remove = (itemId) => {
-    const index = items.findIndex((item) => item.id === itemId);
-    if (index < 0) return false;
-    items.splice(index, 1);
-    return true;
-  };
+  configureStore({ storage: db });
+  const existing = { id: "existing", slug: null, name: "Lait", qty: "1 l", checked: false,
+    addedAt: 1, provenance: { source: "custom" } };
+  db.setItem(STORE_KEYS.items, JSON.stringify([existing]));
+  const items = getItems();
   const result = applyTransfer(payload({ items: [
     { name: "Lait", qty: "1 l" }, payload().items[0],
-  ] }), { storage: db, getCurrentItems: () => items });
+  ] }), { storage: db });
   assert.equal(result.added.length, 1);
   assert.equal(result.skipped, 1);
   assert.equal(items[0].name, "Lait");
-  assert.equal(items[1].provenance.recipes[0].id, "ratatouille");
-  assert.equal(applyTransfer(payload({ items: [payload().items[0]] }), {
-    storage: db, getCurrentItems: () => items,
-  }).alreadyApplied, true);
-  assert.equal(undoTransfer(payload().transferId, { storage: db,
-    getCurrentItems: () => items, remove }), 1);
-  assert.equal(items.length, 1);
+  assert.equal(getItems()[1].provenance.recipes[0].id, "ratatouille");
+  assert.equal(getFrequency("ail").count, 1);
+  assert.equal(applyTransfer(payload({ items: [payload().items[0]] }), { storage: db }).alreadyApplied, true);
+  assert.equal(getFrequency("ail").count, 1);
+  assert.equal(undoTransfer(payload().transferId, { storage: db }), 1);
+  assert.equal(getItems().length, 1);
+  assert.equal(getFrequency("ail").count, 1);
   assert.equal(db.getItem(TRANSFER_LEDGER_KEY).includes(payload().transferId), false);
+  assert.equal(applyTransfer(payload({ items: [payload().items[0]] }), { storage: db }).added.length, 1);
+  assert.equal(getFrequency("ail").count, 2);
 });
 
 test("undo preserves a transfer item edited after import", () => {
@@ -98,6 +99,7 @@ test("quota failure cannot leave a partial list or ledger and the transfer can b
   let rejectFarine = true;
   const db = storage({ failSet: (key, value) => key === "shopping-list:items:v1"
     && rejectFarine && value.includes("Farine") });
+  configureStore({ storage: db });
   const items = [];
   const transfer = payload({ items: [{ name: "Ail", qty: "2 gousses" }, { name: "Farine", qty: "500 g" }] });
 
@@ -105,17 +107,20 @@ test("quota failure cannot leave a partial list or ledger and the transfer can b
   assert.deepEqual(items, []);
   assert.equal(db.getItem("shopping-list:items:v1"), null);
   assert.equal(db.getItem(TRANSFER_LEDGER_KEY), null);
+  assert.equal(getFrequency("Ail"), null);
 
   rejectFarine = false;
   const result = applyTransfer(transfer, { storage: db, getCurrentItems: () => items });
   assert.equal(result.added.length, 2);
   assert.equal(items.length, 2);
   assert.ok(db.getItem(TRANSFER_LEDGER_KEY));
+  assert.equal(getFrequency("Ail").count, 1);
 });
 
 test("ledger quota failure rolls back the list and leaves the transfer retryable", () => {
   let rejectLedger = true;
   const db = storage({ failSet: (key) => key === TRANSFER_LEDGER_KEY && rejectLedger });
+  configureStore({ storage: db });
   const items = [];
   const transfer = payload();
 
@@ -123,11 +128,33 @@ test("ledger quota failure rolls back the list and leaves the transfer retryable
   assert.deepEqual(items, []);
   assert.equal(db.getItem("shopping-list:items:v1"), null);
   assert.equal(db.getItem(TRANSFER_LEDGER_KEY), null);
+  assert.equal(getFrequency("Ail"), null);
 
   rejectLedger = false;
   assert.equal(applyTransfer(transfer, { storage: db, getCurrentItems: () => items }).added.length, 1);
   assert.equal(items.length, 1);
   assert.ok(db.getItem(TRANSFER_LEDGER_KEY));
+  assert.equal(getFrequency("Ail").count, 1);
+});
+
+test("frequency quota failure rolls back list and ledger without frequency side effects", () => {
+  let rejectFrequency = true;
+  const db = storage({ failSet: (key) => key === STORE_KEYS.frequency && rejectFrequency });
+  configureStore({ storage: db });
+  const items = [];
+  const transfer = payload();
+
+  assert.throws(() => applyTransfer(transfer, { storage: db, getCurrentItems: () => items }), /QuotaExceededError/);
+  assert.deepEqual(items, []);
+  assert.equal(db.getItem(STORE_KEYS.items), null);
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY), null);
+  assert.equal(db.getItem(STORE_KEYS.frequency), null);
+  assert.equal(getFrequency("Ail"), null);
+
+  rejectFrequency = false;
+  assert.equal(applyTransfer(transfer, { storage: db, getCurrentItems: () => items }).added.length, 1);
+  assert.equal(items.length, 1);
+  assert.equal(getFrequency("Ail").count, 1);
 });
 
 test("receiver module is precached for the local offline path", async () => {

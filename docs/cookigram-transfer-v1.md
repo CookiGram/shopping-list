@@ -40,6 +40,9 @@ never fetches or navigates to it during import. Unknown fields are ignored.
 - Add items; never clear or replace the current list.
 - Persist the imported list as one write. If the list or completion-ledger write
   fails, leave the list unchanged and the transfer retryable.
+- Update frequency ranking for newly added items in the same transaction;
+  failed writes must leave frequency unchanged. Undo removes the list items but
+  keeps the successful-add frequency signal, as other item removals do.
 - Skip existing items matching CookiList's normalized name + quantity rule.
   Report added and skipped counts. Keep source metadata on newly added items.
 - Store completed `transferId`s locally. Reopening a completed transfer is a

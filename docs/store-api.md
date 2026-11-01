@@ -71,7 +71,7 @@ The transfer boundary is versioned in
 import {
   getItems, getItem, addItem, toggleItem, setChecked, setQty,
   removeItem, clearChecked, clearAll, subscribe,
-  getFrequency, topFrequent,
+  getFrequency, topFrequent, frequencySnapshotAfterAdds,
   favoriteKey, getFavorites, isFavorite, toggleFavorite, clearFavorites,
   essentialKey, getEssentials, isEssential, toggleEssential, clearEssentials,
   getPrefs, setPrefs, resetPrefs,
@@ -106,6 +106,10 @@ Frequency signal (ranking help for the search/app lanes):
   count desc, recency desc; `exclude` holds slugs already on the
   list. Lookup keys use `normalizeName` (same semantics as
   catalog `normalizeKey`, duplicated so the store stays decoupled).
+- `frequencySnapshotAfterAdds(entries, initial?)` → a frequency snapshot
+  with the given successful additions applied; pure and does not persist.
+  The transfer receiver uses it to keep list, ledger, and ranking updates
+  inside one rollback-capable storage operation.
 
 Favorites (heart toggles):
 
