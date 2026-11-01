@@ -27,8 +27,9 @@ export const validateTransfer = (data) => {
     if (item?.qty !== undefined && typeof item.qty !== "string") throw new Error("Quantité invalide");
     const qty = typeof item?.qty === "string" ? item.qty.trim() : "";
     const slug = item?.slug == null ? null : item.slug;
+    const slugCharacterCount = typeof slug === "string" ? [...slug].length : 0;
     if (!name || name.length > 120 || qty.length > 80
-        || (slug !== null && (typeof slug !== "string" || slug.length < 1 || slug.length > 100))) {
+        || (slug !== null && (typeof slug !== "string" || slugCharacterCount < 1 || slugCharacterCount > 100))) {
       throw new Error("Un article du transfert est invalide");
     }
     const source = item?.recipe;
@@ -43,7 +44,7 @@ export const validateTransfer = (data) => {
         let url;
         try { url = new URL(source.url); } catch { throw new Error("Lien de recette invalide"); }
         if (url.protocol !== "https:" || url.hostname !== "cookigram.github.io"
-            || url.username || url.password) {
+            || url.port || url.username || url.password) {
           throw new Error("Lien de recette non autorisé");
         }
         recipeUrl = url.href;
