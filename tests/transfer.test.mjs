@@ -34,6 +34,7 @@ test("transfer fragment decodes v1 payload and validates its provenance origin",
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "http://cookigram.github.io/other/" } }] })), /non autorisé/);
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://cookigram.github.io.evil/other/" } }] })), /non autorisé/);
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://user@cookigram.github.io/other/" } }] })), /non autorisé/);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://user:secret@cookigram.github.io/other/" } }] })), /non autorisé/);
   const otherPath = validateTransfer(payload({ items: [{ name: "A", recipe: {
     id: "a", name: "A", url: "https://cookigram.github.io/another-app/recipes/thing?q=x#part",
   } }] }));
@@ -58,6 +59,22 @@ test("transfer fragment decodes v1 payload and validates its provenance origin",
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", slug: "🛒".repeat(101) }] })), /article.*invalide/);
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", slug: "" }] })), /article.*invalide/);
   assert.throws(() => parseTransferHash("#cookigram-transfer=%%%"));
+});
+
+test("transfer accepts the Core v1 limits of 100 items and 24 KiB, rejecting overflow", () => {
+  const hundredItems = Array.from({ length: 100 }, (_, index) => ({ name: `Item ${index}` }));
+  assert.equal(validateTransfer(payload({ items: hundredItems })).items.length, 100);
+  assert.throws(() => validateTransfer(payload({ items: [...hundredItems, { name: "Item 100" }] })), /non reconnu/);
+
+  const exactLimit = payload({ items: [{ name: "A" }], ignored: "" });
+  const initialBytes = Buffer.byteLength(JSON.stringify(exactLimit), "utf8");
+  exactLimit.ignored = "x".repeat(24 * 1024 - initialBytes);
+  const exactLimitJson = JSON.stringify(exactLimit);
+  assert.equal(Buffer.byteLength(exactLimitJson, "utf8"), 24 * 1024);
+  assert.equal(parseTransferHash(`#cookigram-transfer=${Buffer.from(exactLimitJson).toString("base64url")}`).items.length, 1);
+
+  exactLimit.ignored += "x";
+  assert.throws(() => parseTransferHash(`#cookigram-transfer=${base64url(exactLimit)}`));
 });
 
 test("transfer is additive, deduped, idempotent, and undo removes only its untouched additions", () => {
