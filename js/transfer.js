@@ -28,7 +28,7 @@ export const validateTransfer = (data) => {
     const qty = typeof item?.qty === "string" ? item.qty.trim() : "";
     const slug = item?.slug == null ? null : item.slug;
     if (!name || name.length > 120 || qty.length > 80
-        || (slug !== null && (typeof slug !== "string" || !/^[a-z0-9-]{1,100}$/i.test(slug)))) {
+        || (slug !== null && (typeof slug !== "string" || slug.length < 1 || slug.length > 100))) {
       throw new Error("Un article du transfert est invalide");
     }
     const source = item?.recipe;
@@ -38,15 +38,17 @@ export const validateTransfer = (data) => {
           || typeof source.name !== "string" || !source.name.trim() || source.name.length > 120) {
         throw new Error("Provenance de recette invalide");
       }
+      let recipeUrl;
       if (source.url !== undefined) {
         let url;
         try { url = new URL(source.url); } catch { throw new Error("Lien de recette invalide"); }
         if (url.protocol !== "https:" || url.hostname !== "cookigram.github.io"
-            || !url.pathname.startsWith("/cookigram/")) {
+            || url.username || url.password) {
           throw new Error("Lien de recette non autorisé");
         }
+        recipeUrl = url.href;
       }
-      recipe = { id: source.id, name: source.name.trim(), ...(source.url ? { url: source.url } : {}) };
+      recipe = { id: source.id, name: source.name.trim(), ...(recipeUrl ? { url: recipeUrl } : {}) };
     }
     return { name, qty, slug, ...(recipe ? { recipe } : {}) };
   });

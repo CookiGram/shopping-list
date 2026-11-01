@@ -25,7 +25,22 @@ test("transfer fragment decodes v1 payload and validates its provenance origin",
   assert.throws(() => validateTransfer(payload({ version: 2 })), /non reconnu/);
   assert.throws(() => validateTransfer(payload({ items: Array(101).fill({ name: "A" }) })), /non reconnu/);
   assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://evil.example/" } }] })), /non autorisé/);
-  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://cookigram.github.io/other/" } }] })), /non autorisé/);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "http://cookigram.github.io/other/" } }] })), /non autorisé/);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://cookigram.github.io.evil/other/" } }] })), /non autorisé/);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", recipe: { id: "a", name: "A", url: "https://user@cookigram.github.io/other/" } }] })), /non autorisé/);
+  const otherPath = validateTransfer(payload({ items: [{ name: "A", recipe: {
+    id: "a", name: "A", url: "https://cookigram.github.io/another-app/recipes/thing?q=x#part",
+  } }] }));
+  assert.equal(otherPath.items[0].recipe.url, "https://cookigram.github.io/another-app/recipes/thing?q=x#part");
+  const rootUrl = validateTransfer(payload({ items: [{ name: "A", recipe: {
+    id: "a", name: "A", url: "https://cookigram.github.io",
+  } }] }));
+  assert.equal(rootUrl.items[0].recipe.url, "https://cookigram.github.io/");
+  const broadSlug = "réf/avec?ponctuation#ok";
+  assert.equal(validateTransfer(payload({ items: [{ name: "A", slug: broadSlug }] })).items[0].slug, broadSlug);
+  assert.equal(validateTransfer(payload({ items: [{ name: "A", slug: "x".repeat(100) }] })).items[0].slug.length, 100);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", slug: "x".repeat(101) }] })), /article.*invalide/);
+  assert.throws(() => validateTransfer(payload({ items: [{ name: "A", slug: "" }] })), /article.*invalide/);
   assert.throws(() => parseTransferHash("#cookigram-transfer=%%%"));
 });
 
