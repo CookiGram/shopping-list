@@ -233,3 +233,98 @@ test("e2e #30 R3: filtre rayon via en-têtes de liste (navigateur réel)", { ski
     await page.close();
   }
 });
+
+test("e2e #32: icônes de variantes visibles après ajout, reload et offline", { skip: !hasCdp }, async (t) => {
+  const page = await openTab();
+
+  try {
+    await page.load(1280, 900, false);
+    const serviceWorkerReady = await page.evaluate(`!!navigator.serviceWorker`);
+    assert.equal(serviceWorkerReady, true, "service worker API available on localhost");
+
+    await page.evaluate(`(() => {
+      const input = document.querySelector('#shopping-search');
+      input.value = 'oeufs';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    for (let i = 0; i < 40; i++) {
+      if (await page.evaluate(`[...document.querySelectorAll('#shopping-suggestions .suggestion-icon[src]')].length >= 2 && [...document.querySelectorAll('#shopping-suggestions .suggestion-icon[src]')].every((img) => img.complete && img.naturalWidth > 0)`)) break;
+      await sleep(100);
+    }
+
+    const suggestions = await page.evaluate(`JSON.stringify([...document.querySelectorAll('#shopping-suggestions .suggestion')]
+      .filter((button) => button.textContent.includes('boîte de'))
+      .map((button) => {
+        const img = button.querySelector('img');
+        const rect = img?.getBoundingClientRect();
+        return { label: button.textContent, src: img?.getAttribute('src'), width: img?.naturalWidth,
+          visible: !!rect && rect.width > 0 && rect.height > 0 && getComputedStyle(img).visibility === 'visible' };
+      }))`);
+    const suggestionIcons = JSON.parse(suggestions);
+    await check(t, "les deux variantes d'œufs rendent leurs SVG chargés dans les suggestions",
+      suggestionIcons.length === 2 && suggestionIcons.every((item) => item.src?.includes('/assets/icons/eggs-') && item.width > 0 && item.visible),
+      JSON.stringify(suggestionIcons));
+
+    await page.clickOn('#shopping-suggestions .suggestion', 'boîte de 6');
+    for (let i = 0; i < 40; i++) {
+      if (await page.evaluate(`document.querySelector('.shopping-item img.shopping-item-icon')?.naturalWidth > 0`)) break;
+      await sleep(100);
+    }
+    const added = await page.evaluate(`JSON.stringify({
+      item: JSON.parse(localStorage.getItem('shopping-list:items:v1') || '[]')[0],
+      icon: document.querySelector('.shopping-item img.shopping-item-icon')?.getAttribute('src'),
+      width: document.querySelector('.shopping-item img.shopping-item-icon')?.naturalWidth,
+      visible: (() => { const img = document.querySelector('.shopping-item img.shopping-item-icon'); const rect = img?.getBoundingClientRect(); return !!rect && rect.width > 0 && rect.height > 0 && getComputedStyle(img).visibility === 'visible'; })()
+    })`);
+    const addedState = JSON.parse(added);
+    await check(t, "l'icône est visible dans la liste et la variante est stockée",
+      addedState.item?.variantId === 'box-6' && addedState.icon?.includes('/assets/icons/eggs-6.svg') && addedState.width > 0 && addedState.visible,
+      JSON.stringify(addedState));
+
+    await page.send('Page.reload');
+    await sleep(1800);
+    const afterReload = await page.evaluate(`JSON.stringify({
+      item: JSON.parse(localStorage.getItem('shopping-list:items:v1') || '[]')[0],
+      icon: document.querySelector('.shopping-item img.shopping-item-icon')?.getAttribute('src'),
+      width: document.querySelector('.shopping-item img.shopping-item-icon')?.naturalWidth,
+      visible: (() => { const img = document.querySelector('.shopping-item img.shopping-item-icon'); const rect = img?.getBoundingClientRect(); return !!rect && rect.width > 0 && rect.height > 0 && getComputedStyle(img).visibility === 'visible'; })()
+    })`);
+    const reloadState = JSON.parse(afterReload);
+    await check(t, "après reload, la même variante et son icône restent visibles",
+      reloadState.item?.variantId === 'box-6' && reloadState.icon?.includes('/assets/icons/eggs-6.svg') && reloadState.width > 0 && reloadState.visible,
+      JSON.stringify(reloadState));
+
+    const controlled = await page.evaluate(`!!navigator.serviceWorker.controller`);
+    await page.evaluate(`caches.match('./assets/icons/eggs-6.svg').then((response) => { window.__variantIconCached = !!response; })`);
+    for (let i = 0; i < 40; i++) {
+      if (await page.evaluate(`window.__variantIconCached !== undefined`)) break;
+      await sleep(100);
+    }
+    const cachedIcon = await page.evaluate(`window.__variantIconCached === true`);
+    await check(t, "le service worker contrôle la page et a précaché l'icône", controlled && cachedIcon,
+      `controlled=${controlled}; cached=${cachedIcon}`);
+
+    await page.send('Network.enable');
+    await page.send('Network.emulateNetworkConditions', {
+      offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
+    });
+    await page.send('Page.reload');
+    await sleep(1800);
+    const offlineState = await page.evaluate(`JSON.stringify({
+      online: navigator.onLine,
+      item: JSON.parse(localStorage.getItem('shopping-list:items:v1') || '[]')[0],
+      icon: document.querySelector('.shopping-item img.shopping-item-icon')?.getAttribute('src'),
+      width: document.querySelector('.shopping-item img.shopping-item-icon')?.naturalWidth,
+      visible: (() => { const img = document.querySelector('.shopping-item img.shopping-item-icon'); const rect = img?.getBoundingClientRect(); return !!rect && rect.width > 0 && rect.height > 0 && getComputedStyle(img).visibility === 'visible'; })()
+    })`);
+    const offline = JSON.parse(offlineState);
+    await check(t, "après reload offline, la liste et son SVG restent visibles",
+      offline.online === false && offline.item?.variantId === 'box-6' && offline.icon?.includes('/assets/icons/eggs-6.svg') && offline.width > 0 && offline.visible,
+      JSON.stringify(offline));
+    await page.send('Network.emulateNetworkConditions', {
+      offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
+    });
+  } finally {
+    await page.close();
+  }
+});

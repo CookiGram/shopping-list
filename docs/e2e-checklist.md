@@ -2,14 +2,15 @@
 
 23-step reference scenario mapped to verified-vs-manual status.
 Unit tests run headless with the preinstalled Node runner (no new deps);
-`tests/e2e-search-filter.test.mjs` is a REAL browser test (Chrome/Chromium
-+ CDP, trusted mouse clicks) for issue #30 R3 — skipped without
+`tests/e2e-search-filter.test.mjs` contains REAL browser tests (Chrome/Chromium
++ CDP, trusted mouse clicks) for issue #30 R3 and #32 variant icon rendering,
+reload and offline caching — skipped without
 `SHOPPING_CDP`, so CI stays stdlib-only.
 
 ## Run
 
 ```bash
-node --test tests/*.test.mjs   # 209 tests (208 pass + 1 e2e skip sans navigateur)
+node --test tests/*.test.mjs   # 210 tests (208 pass + 2 e2e skips sans navigateur)
 python3 -m unittest discover -s tests/sync   # Lane D (sync lane owns it; listed for completeness)
 for f in js/*.js sw.js; do node --check "$f"; done   # syntax smoke gate (covers DOM-only modules)
 # Navigateur réel (optionnel, local) :
@@ -65,7 +66,8 @@ holds shared fixtures (memory storage, minimal catalog, search entries).
 
 - Offline/reload/viewport (steps 21–23): no browser automation in this lane;
   `sw.js`, real `localStorage` persistence, layout and screen-reader behavior
-  need a device or desktop browser pass.
+  need a device or desktop browser pass. The #32 pack icon path is separately
+  covered in Chromium: suggestions, add-to-list, reload and offline reload.
 - All DOM rendering and event wiring (components, `list.js` render, `tags.js`
   bar, `app.js` boot): `node --check` proves syntax only. `app.js` calls
   `boot()` at import (needs `document`), so it is deliberately not imported
