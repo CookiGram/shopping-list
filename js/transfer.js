@@ -1,0 +1,196 @@
+/* CookiGram → CookiList explicit transfer receiver, contract v1. */
+import {
+  STORE_KEYS, getItems, createId, normalizeName, frequencySnapshotAfterAdds,
+  emitStoreChange,
+} from "./store.js";
+
+export const TRANSFER_TYPE = "cookigram.shopping-transfer";
+export const TRANSFER_LEDGER_KEY = "shopping-list:cookigram-transfers:v1";
+const MAX_BYTES = 24 * 1024;
+const MAX_ITEMS = 100;
+
+const decodeBase64Url = (encoded) => {
+  if (encoded.length > 32768 || !/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error("Lien de transfert invalide");
+  const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  if (bytes.byteLength > MAX_BYTES) throw new Error("Transfert trop volumineux");
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+};
+
+export const validateTransfer = (data) => {
+  if (!data || data.type !== TRANSFER_TYPE || data.version !== 1
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.transferId)
+      || !Number.isFinite(Date.parse(data.createdAt))
+      || !Array.isArray(data.items) || data.items.length > MAX_ITEMS) {
+    throw new Error("Format de transfert CookiGram non reconnu");
+  }
+  const items = data.items.map((item) => {
+    const name = typeof item?.name === "string" ? item.name.trim() : "";
+    if (item?.qty !== undefined && typeof item.qty !== "string") throw new Error("Quantité invalide");
+    const qty = typeof item?.qty === "string" ? item.qty.trim() : "";
+    const slug = item?.slug == null ? null : item.slug;
+    const slugCharacterCount = typeof slug === "string" ? [...slug].length : 0;
+    if (!name || name.length > 120 || qty.length > 80
+        || (slug !== null && (typeof slug !== "string" || slugCharacterCount < 1 || slugCharacterCount > 100))) {
+      throw new Error("Un article du transfert est invalide");
+    }
+    const source = item?.recipe;
+    let recipe;
+    if (source !== undefined) {
+      if (!source || typeof source.id !== "string" || source.id.length > 120
+          || typeof source.name !== "string" || !source.name.trim() || source.name.length > 120) {
+        throw new Error("Provenance de recette invalide");
+      }
+      let recipeUrl;
+      if (source.url !== undefined) {
+        let url;
+        try { url = new URL(source.url); } catch { throw new Error("Lien de recette invalide"); }
+        if (url.protocol !== "https:" || url.hostname !== "cookigram.github.io"
+            || url.port || url.username || url.password) {
+          throw new Error("Lien de recette non autorisé");
+        }
+        recipeUrl = url.href;
+      }
+      recipe = { id: source.id, name: source.name.trim(), ...(recipeUrl ? { url: recipeUrl } : {}) };
+    }
+    return { name, qty, slug, ...(recipe ? { recipe } : {}) };
+  });
+  return { type: TRANSFER_TYPE, version: 1, transferId: data.transferId, createdAt: data.createdAt, items };
+};
+
+export const parseTransferHash = (hash) => {
+  const value = String(hash ?? "");
+  if (!value.startsWith("#cookigram-transfer=")) return null;
+  const encoded = value.slice("#cookigram-transfer=".length);
+  if (!encoded || !/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error("Lien de transfert invalide");
+  let parsed;
+  try { parsed = JSON.parse(decodeBase64Url(encoded)); }
+  catch (error) { throw new Error(error?.message || "Transfert illisible"); }
+  return validateTransfer(parsed);
+};
+
+const parseLedger = (raw) => {
+  try {
+    const value = JSON.parse(raw || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+};
+
+const parseFrequency = (raw) => {
+  try {
+    const value = JSON.parse(raw || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+};
+
+const persistWithRollback = (storage, writes, previousValues) => {
+  const attempted = [];
+  try {
+    for (const [key, value] of writes) {
+      attempted.push(key);
+      storage.setItem(key, value);
+    }
+  } catch (error) {
+    const rollbackErrors = [];
+    for (const key of attempted.reverse()) {
+      try {
+        const previousValue = previousValues.get(key);
+        if (previousValue == null) storage.removeItem(key);
+        else storage.setItem(key, previousValue);
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    }
+    if (rollbackErrors.length) {
+      throw new AggregateError([error, ...rollbackErrors], "Transfer write failed and storage rollback was incomplete");
+    }
+    throw error;
+  }
+};
+
+export const applyTransfer = (transfer, {
+  storage = globalThis.localStorage,
+  getCurrentItems = getItems,
+} = {}) => {
+  const safe = validateTransfer(transfer);
+  const previousLedger = storage.getItem(TRANSFER_LEDGER_KEY);
+  const ledger = parseLedger(previousLedger);
+  if (ledger[safe.transferId]) return { alreadyApplied: true, added: [], skipped: safe.items.length };
+  const previousItems = storage.getItem(STORE_KEYS.items);
+  const previousFrequency = storage.getItem(STORE_KEYS.frequency);
+  const currentItems = getCurrentItems();
+  const nextItems = [...currentItems];
+  const added = [];
+  let skipped = 0;
+  for (const entry of safe.items) {
+    const duplicate = nextItems.some((item) => normalizeName(item.name) === normalizeName(entry.name)
+      && String(item.qty ?? "").trim().replace(/\s+/g, " ") === entry.qty);
+    if (duplicate) { skipped++; continue; }
+    const item = {
+      id: createId(),
+      slug: entry.slug,
+      name: entry.name,
+      qty: entry.qty,
+      checked: false,
+      addedAt: Date.now(),
+      provenance: { source: "cookigram", ...(entry.recipe ? { recipes: [{
+        id: entry.recipe.id.slice(0, 120),
+        name: entry.recipe.name.trim().slice(0, 120),
+        ...(entry.recipe.url ? { url: entry.recipe.url.slice(0, 500) } : {}),
+      }] } : {}) },
+    };
+    nextItems.push(item);
+    added.push({ id: item.id, item });
+  }
+
+  const nextFrequency = frequencySnapshotAfterAdds(
+    added.map(({ item }) => ({ name: item.name, slug: item.slug })),
+    parseFrequency(previousFrequency),
+  );
+  ledger[safe.transferId] = { added, completedAt: Date.now() };
+  const previousValues = new Map([
+    [STORE_KEYS.items, previousItems],
+    [TRANSFER_LEDGER_KEY, previousLedger],
+    [STORE_KEYS.frequency, previousFrequency],
+  ]);
+  const writes = [
+    ...(added.length ? [[STORE_KEYS.items, JSON.stringify(nextItems)]] : []),
+    [TRANSFER_LEDGER_KEY, JSON.stringify(ledger)],
+    ...(added.length ? [[STORE_KEYS.frequency, JSON.stringify(nextFrequency)]] : []),
+  ];
+  persistWithRollback(storage, writes, previousValues);
+  currentItems.splice(0, currentItems.length, ...nextItems);
+  for (const { id } of added) emitStoreChange("items:add", { id });
+  return { alreadyApplied: false, added, skipped };
+};
+
+export const undoTransfer = (transferId, {
+  storage = globalThis.localStorage,
+  getCurrentItems = getItems,
+} = {}) => {
+  const previousLedger = storage.getItem(TRANSFER_LEDGER_KEY);
+  const ledger = parseLedger(previousLedger);
+  const record = ledger[transferId];
+  if (!record) return 0;
+  const previousItems = storage.getItem(STORE_KEYS.items);
+  const currentItems = getCurrentItems();
+  const removableIds = new Set((record.added ?? [])
+    .filter((ref) => currentItems.some((item) => item.id === ref.id
+      && JSON.stringify(item) === JSON.stringify(ref.item)))
+    .map(({ id }) => id));
+  const nextItems = currentItems.filter((item) => !removableIds.has(item.id));
+  delete ledger[transferId];
+  const previousValues = new Map([
+    [STORE_KEYS.items, previousItems],
+    [TRANSFER_LEDGER_KEY, previousLedger],
+  ]);
+  const writes = [
+    ...(removableIds.size ? [[STORE_KEYS.items, JSON.stringify(nextItems)]] : []),
+    [TRANSFER_LEDGER_KEY, JSON.stringify(ledger)],
+  ];
+  persistWithRollback(storage, writes, previousValues);
+  currentItems.splice(0, currentItems.length, ...nextItems);
+  for (const id of removableIds) emitStoreChange("items:remove", { id });
+  return removableIds.size;
+};

@@ -48,6 +48,7 @@ import { aisleTerm, onAisleChange } from "./aisle-filter.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
+import { parseTransferHash, applyTransfer, undoTransfer } from "./transfer.js";
 import {
   essentialChip,
   essentialButton,
@@ -779,6 +780,60 @@ function renderCatalogVersion(counts) {
   }
 }
 
+function initTransferReceiver() {
+  const panel = $("#transfer-review");
+  const status = $("#transfer-status");
+  if (!panel) return;
+  let transfer = null;
+  try { transfer = parseTransferHash(location.hash); }
+  catch (error) {
+    if (location.hash.startsWith("#cookigram-transfer=")) {
+      panel.hidden = false;
+      status.textContent = error.message || "Transfert invalide";
+    }
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    return;
+  }
+  if (!transfer) return;
+  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  panel.hidden = false;
+  const ledger = (() => { try { return JSON.parse(localStorage.getItem("shopping-list:cookigram-transfers:v1") || "{}"); } catch { return {}; } })();
+  const done = ledger[transfer.transferId];
+  $("#transfer-summary").textContent = `${transfer.items.length} article${transfer.items.length === 1 ? "" : "s"} proposé${transfer.items.length === 1 ? "" : "s"}. Votre liste actuelle sera conservée.`;
+  const list = $("#transfer-items");
+  for (const item of transfer.items) {
+    const row = document.createElement("li");
+    row.textContent = `${item.name}${item.qty ? ` · ${item.qty}` : ""}${item.recipe ? ` — ${item.recipe.name}` : ""}`;
+    list.appendChild(row);
+  }
+  const confirm = $("#transfer-confirm");
+  const cancel = $("#transfer-cancel");
+  const undo = $("#transfer-undo");
+  if (done) {
+    status.textContent = "Ce transfert a déjà été ajouté.";
+    confirm.hidden = true;
+    undo.hidden = false;
+  }
+  confirm?.addEventListener("click", () => {
+    try {
+      const result = applyTransfer(transfer);
+      status.textContent = result.alreadyApplied ? "Ce transfert a déjà été ajouté."
+        : `${result.added.length} ajouté${result.added.length === 1 ? "" : "s"}, ${result.skipped} doublon${result.skipped === 1 ? " ignoré" : "s ignorés"}.`;
+      confirm.hidden = true;
+      undo.hidden = result.alreadyApplied;
+    } catch { status.textContent = "Import impossible. Votre liste n’a pas été remplacée."; }
+  });
+  cancel?.addEventListener("click", () => { panel.hidden = true; });
+  undo?.addEventListener("click", () => {
+    try {
+      const count = undoTransfer(transfer.transferId);
+      status.textContent = `${count} article${count === 1 ? " retiré" : "s retirés"} de cet import.`;
+      undo.hidden = true;
+      confirm.hidden = false;
+    } catch { status.textContent = "Annulation impossible."; }
+  });
+}
+
 async function boot() {
   els.search = $("#shopping-search");
   els.clear = $("#shopping-clear");
@@ -839,6 +894,7 @@ async function boot() {
   renderEssentials();
   renderHistory();
   renderSuggestions();
+  initTransferReceiver();
 
   subscribe(() => {
     renderEssentials();

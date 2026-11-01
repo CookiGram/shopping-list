@@ -239,7 +239,16 @@ const normalizeProvenance = (provenance, slug) => {
   if (!PROVENANCE_SOURCES.includes(source)) {
     throw new Error(`store: unknown provenance source ${JSON.stringify(source)}`);
   }
-  return { source };
+  const recipes = Array.isArray(provenance?.recipes) ? provenance.recipes
+    .filter((recipe) => recipe && typeof recipe.id === "string" && typeof recipe.name === "string")
+    .slice(0, 10)
+    .map((recipe) => ({
+      id: recipe.id.slice(0, 120),
+      name: recipe.name.trim().slice(0, 120),
+      ...(typeof recipe.url === "string" && recipe.url.startsWith("https://cookigram.github.io/")
+        ? { url: recipe.url.slice(0, 500) } : {}),
+    })) : [];
+  return { source, ...(recipes.length ? { recipes } : {}) };
 };
 
 /** All current-list items, in insertion order (copies; mutate via setters). */
@@ -396,17 +405,21 @@ const readFrequency = () => {
   return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
 };
 
-const bumpFrequency = (name, slug) => {
-  const key = normalizeName(name);
-  if (!key) return;
-  const freq = readFrequency();
-  const prev = freq[key];
-  freq[key] = {
-    name: prev?.name ?? String(name).trim(),
-    slug: slug ?? prev?.slug ?? null,
-    count: (prev?.count ?? 0) + 1,
-    lastUsedAt: Date.now(),
-  };
+/** Build the frequency state produced by successful additions, without writing it. */
+export const frequencySnapshotAfterAdds = (entries, initial = readFrequency()) => {
+  const freq = initial && typeof initial === "object" && !Array.isArray(initial)
+    ? cloneJson(initial) : {};
+  for (const { name, slug } of entries) {
+    const key = normalizeName(name);
+    if (!key) continue;
+    const prev = freq[key];
+    freq[key] = {
+      name: prev?.name ?? String(name).trim(),
+      slug: slug ?? prev?.slug ?? null,
+      count: (prev?.count ?? 0) + 1,
+      lastUsedAt: Date.now(),
+    };
+  }
   const keys = Object.keys(freq);
   if (keys.length > MAX_FREQUENCY_KEYS) {
     keys
@@ -416,6 +429,11 @@ const bumpFrequency = (name, slug) => {
         delete freq[oldest];
       });
   }
+  return freq;
+};
+
+const bumpFrequency = (name, slug) => {
+  const freq = frequencySnapshotAfterAdds([{ name, slug }]);
   writeStoreKey(STORE_KEYS.frequency, freq);
 };
 
