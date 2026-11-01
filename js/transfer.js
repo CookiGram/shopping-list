@@ -1,7 +1,7 @@
 /* CookiGram → CookiList explicit transfer receiver, contract v1. */
 import {
   STORE_KEYS, getItems, createId, normalizeName, frequencySnapshotAfterAdds,
-  emitStoreChange, removeItem,
+  emitStoreChange,
 } from "./store.js";
 
 export const TRANSFER_TYPE = "cookigram.shopping-transfer";
@@ -77,16 +77,36 @@ const parseLedger = (raw) => {
   } catch { return {}; }
 };
 
-const getLedger = (storage) => {
-  try { return parseLedger(storage.getItem(TRANSFER_LEDGER_KEY)); }
-  catch { return {}; }
-};
-
 const parseFrequency = (raw) => {
   try {
     const value = JSON.parse(raw || "{}");
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch { return {}; }
+};
+
+const persistWithRollback = (storage, writes, previousValues) => {
+  const attempted = [];
+  try {
+    for (const [key, value] of writes) {
+      attempted.push(key);
+      storage.setItem(key, value);
+    }
+  } catch (error) {
+    const rollbackErrors = [];
+    for (const key of attempted.reverse()) {
+      try {
+        const previousValue = previousValues.get(key);
+        if (previousValue == null) storage.removeItem(key);
+        else storage.setItem(key, previousValue);
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    }
+    if (rollbackErrors.length) {
+      throw new AggregateError([error, ...rollbackErrors], "Transfer write failed and storage rollback was incomplete");
+    }
+    throw error;
+  }
 };
 
 export const applyTransfer = (transfer, {
@@ -139,28 +159,7 @@ export const applyTransfer = (transfer, {
     [TRANSFER_LEDGER_KEY, JSON.stringify(ledger)],
     ...(added.length ? [[STORE_KEYS.frequency, JSON.stringify(nextFrequency)]] : []),
   ];
-  const attempted = [];
-  try {
-    for (const [key, value] of writes) {
-      attempted.push(key);
-      storage.setItem(key, value);
-    }
-  } catch (error) {
-    const rollbackErrors = [];
-    for (const key of attempted.reverse()) {
-      try {
-        const previousValue = previousValues.get(key);
-        if (previousValue == null) storage.removeItem(key);
-        else storage.setItem(key, previousValue);
-      } catch (rollbackError) {
-        rollbackErrors.push(rollbackError);
-      }
-    }
-    if (rollbackErrors.length) {
-      throw new AggregateError([error, ...rollbackErrors], "Transfer write failed and storage rollback was incomplete");
-    }
-    throw error;
-  }
+  persistWithRollback(storage, writes, previousValues);
   currentItems.splice(0, currentItems.length, ...nextItems);
   for (const { id } of added) emitStoreChange("items:add", { id });
   return { alreadyApplied: false, added, skipped };
@@ -169,17 +168,29 @@ export const applyTransfer = (transfer, {
 export const undoTransfer = (transferId, {
   storage = globalThis.localStorage,
   getCurrentItems = getItems,
-  remove = removeItem,
 } = {}) => {
-  const ledger = getLedger(storage);
+  const previousLedger = storage.getItem(TRANSFER_LEDGER_KEY);
+  const ledger = parseLedger(previousLedger);
   const record = ledger[transferId];
   if (!record) return 0;
-  let removed = 0;
-  for (const ref of record.added ?? []) {
-    const current = getCurrentItems().find((item) => item.id === ref.id);
-    if (current && JSON.stringify(current) === JSON.stringify(ref.item) && remove(ref.id)) removed++;
-  }
+  const previousItems = storage.getItem(STORE_KEYS.items);
+  const currentItems = getCurrentItems();
+  const removableIds = new Set((record.added ?? [])
+    .filter((ref) => currentItems.some((item) => item.id === ref.id
+      && JSON.stringify(item) === JSON.stringify(ref.item)))
+    .map(({ id }) => id));
+  const nextItems = currentItems.filter((item) => !removableIds.has(item.id));
   delete ledger[transferId];
-  storage.setItem(TRANSFER_LEDGER_KEY, JSON.stringify(ledger));
-  return removed;
+  const previousValues = new Map([
+    [STORE_KEYS.items, previousItems],
+    [TRANSFER_LEDGER_KEY, previousLedger],
+  ]);
+  const writes = [
+    ...(removableIds.size ? [[STORE_KEYS.items, JSON.stringify(nextItems)]] : []),
+    [TRANSFER_LEDGER_KEY, JSON.stringify(ledger)],
+  ];
+  persistWithRollback(storage, writes, previousValues);
+  currentItems.splice(0, currentItems.length, ...nextItems);
+  for (const id of removableIds) emitStoreChange("items:remove", { id });
+  return removableIds.size;
 };

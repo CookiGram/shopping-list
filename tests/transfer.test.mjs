@@ -87,12 +87,47 @@ test("transfer is additive, deduped, idempotent, and undo removes only its untou
 
 test("undo preserves a transfer item edited after import", () => {
   const db = storage();
-  const items = [];
-  applyTransfer(payload(), { storage: db, getCurrentItems: () => items });
-  items[0].addedAt = 6;
-  assert.equal(undoTransfer(payload().transferId, { storage: db, getCurrentItems: () => items,
-    remove: () => { items.length = 0; return true; } }), 0);
-  assert.equal(items.length, 1);
+  configureStore({ storage: db });
+  applyTransfer(payload(), { storage: db });
+  const [imported] = getItems();
+  db.setItem(STORE_KEYS.items, JSON.stringify([{ ...imported, qty: "4 gousses" }]));
+  assert.equal(undoTransfer(payload().transferId, { storage: db }), 0);
+  assert.equal(getItems().length, 1);
+  assert.equal(getItems()[0].qty, "4 gousses");
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY).includes(payload().transferId), false);
+});
+
+test("undo ledger quota failure restores the complete list and keeps the transfer retryable", () => {
+  let rejectLedgerOnce = false;
+  const db = storage({ failSet: (key) => {
+    if (key !== TRANSFER_LEDGER_KEY || !rejectLedgerOnce) return false;
+    rejectLedgerOnce = false;
+    return true;
+  } });
+  configureStore({ storage: db });
+  const existing = { id: "existing", slug: null, name: "Lait", qty: "1 l", checked: false,
+    addedAt: 1, provenance: { source: "custom" } };
+  db.setItem(STORE_KEYS.items, JSON.stringify([existing]));
+  const transfer = payload({ items: [{ name: "Ail", qty: "2 gousses" }, { name: "Farine", qty: "500 g" }] });
+  applyTransfer(transfer, { storage: db });
+
+  const beforeEdit = getItems();
+  const changedAil = { ...beforeEdit.find((item) => item.name === "Ail"), qty: "3 gousses" };
+  db.setItem(STORE_KEYS.items, JSON.stringify(beforeEdit.map((item) => item.id === changedAil.id ? changedAil : item)));
+  const previousItems = db.getItem(STORE_KEYS.items);
+  const previousLedger = db.getItem(TRANSFER_LEDGER_KEY);
+
+  rejectLedgerOnce = true;
+  assert.throws(() => undoTransfer(transfer.transferId, { storage: db }), /QuotaExceededError/);
+  assert.equal(db.getItem(STORE_KEYS.items), previousItems);
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY), previousLedger);
+  assert.deepEqual(getItems().map(({ id }) => id), beforeEdit.map(({ id }) => id));
+
+  assert.equal(undoTransfer(transfer.transferId, { storage: db }), 1);
+  assert.deepEqual(getItems().map(({ id }) => id), ["existing", changedAil.id]);
+  assert.equal(getItems().find((item) => item.id === changedAil.id).qty, "3 gousses");
+  assert.equal(db.getItem(TRANSFER_LEDGER_KEY).includes(transfer.transferId), false);
+  assert.equal(getFrequency("Ail").count, 1);
 });
 
 test("quota failure cannot leave a partial list or ledger and the transfer can be retried", () => {

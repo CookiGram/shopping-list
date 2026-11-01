@@ -52,6 +52,8 @@ never fetches or navigates to it during import. Unknown fields are ignored.
   Undo removes only items created by that transfer that still match their
   original stored record; it never removes pre-existing or subsequently edited
   items. Undo also clears the completion marker so the user may retry.
+- Apply Undo's list removal and ledger update as one rollback-capable operation;
+  a failed write leaves the list and marker unchanged for another attempt.
 - Malformed, stale-version, oversized, or unsupported transfers fail closed;
   ordinary local list use remains available.
 
