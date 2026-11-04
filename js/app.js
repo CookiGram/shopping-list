@@ -49,6 +49,7 @@ import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
 import { parseTransferHash, applyTransfer, undoTransfer } from "./transfer.js";
+import { showTransferError } from "./transfer-ui.js";
 import {
   essentialChip,
   essentialButton,
@@ -788,8 +789,14 @@ function initTransferReceiver() {
   try { transfer = parseTransferHash(location.hash); }
   catch (error) {
     if (location.hash.startsWith("#cookigram-transfer=")) {
-      panel.hidden = false;
-      status.textContent = error.message || "Transfert invalide";
+      showTransferError({
+        panel,
+        status,
+        confirm: $("#transfer-confirm"),
+        cancel: $("#transfer-cancel"),
+        undo: $("#transfer-undo"),
+        message: error.message,
+      });
     }
     history.replaceState(null, "", `${location.pathname}${location.search}`);
     return;

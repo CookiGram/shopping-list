@@ -25,6 +25,7 @@ const PRECACHE = [
   "./js/store.js",
   "./js/tags.js",
   "./js/transfer.js",
+  "./js/transfer-ui.js",
   "./js/voice.js",
   "./data/cookigram-catalog.json",
   "./data/shopping-dict.json",
