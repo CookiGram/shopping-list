@@ -18,3 +18,4 @@ jobs:
           python-version: "3.12"
       - run: pip install pyyaml
       - run: python3 -m unittest discover -s tests/sync
+      - run: python3 scripts/check-sw-catalog-version.py
