@@ -5,7 +5,7 @@
  * data/cookigram-catalog.json meta.source.ref); the catalog sync lane
  * bumps it on every refresh.
  */
-const CATALOG_REF7 = "656f2f0";
+const CATALOG_REF7 = "07f8102";
 const CACHE = `shopping-list-${CATALOG_REF7}`;
 
 const PRECACHE = [
@@ -59,8 +59,9 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
+    // CacheStorage is shared by apps on this origin: preserve foreign caches.
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("shopping-list-") && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
