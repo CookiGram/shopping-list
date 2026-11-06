@@ -49,6 +49,14 @@ class CacheVersionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exactly one"):
             MODULE.reconcile(self.catalog, self.worker, write=True)
 
+    def test_activate_only_cleans_shopping_list_caches(self):
+        worker = (Path(__file__).resolve().parents[2] / "sw.js").read_text(encoding="utf-8")
+        self.assertIn(
+            'keys.filter((k) => k.startsWith("shopping-list-") && k !== CACHE)',
+            worker,
+            "never evict other PWAs sharing this origin",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
