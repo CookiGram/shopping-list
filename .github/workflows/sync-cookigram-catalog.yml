@@ -90,11 +90,12 @@ jobs:
           SUMMARY="$(python3 scripts/sync-catalog.py material-diff --summary data/cookigram-catalog.json /tmp/catalog.new.json)"
           ENTRIES="$(python3 -c 'import json,sys; print(json.load(open("/tmp/catalog.new.json"))["meta"]["source"]["files"][".gram/ingredients.yaml"]["entries"])')"
           mv /tmp/catalog.new.json data/cookigram-catalog.json
+          python3 scripts/check-sw-catalog-version.py --write
 
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout -B "$BRANCH"
-          git add data/cookigram-catalog.json
+          git add data/cookigram-catalog.json sw.js
           if git diff --cached --quiet; then
             echo "No staged change after material diff — nothing to do."
             exit 0
@@ -115,7 +116,7 @@ jobs:
           - Removed: $REMOVED
           - Changed ($N_CHANGED): $CHANGED
 
-          Only \`data/cookigram-catalog.json\` is touched. No auto-merge:
+          Only \`data/cookigram-catalog.json\` and the corresponding \`sw.js\` cache token are touched. No auto-merge:
           a human reviews and merges this PR.
           EOF
           if gh pr view "$BRANCH" --json url --jq .url >/dev/null 2>&1; then

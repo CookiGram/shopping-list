@@ -18,3 +18,10 @@ jobs:
           python-version: "3.12"
       - run: pip install pyyaml
       - run: python3 -m unittest discover -s tests/sync
+      - run: python3 scripts/check-sw-catalog-version.py
+      - name: Install Chromium for service-worker E2E
+        run: |
+          pip install playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Test service-worker catalog refresh and offline isolation
+        run: python3 tests/e2e/test_sw_catalog_refresh.py
