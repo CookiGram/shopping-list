@@ -5,7 +5,7 @@
  * data/cookigram-catalog.json meta.source.ref); the catalog sync lane
  * bumps it on every refresh.
  */
-const CATALOG_REF7 = "154c302";
+const CATALOG_REF7 = "7dffb44";
 const CACHE = `shopping-list-${CATALOG_REF7}`;
 
 const PRECACHE = [
