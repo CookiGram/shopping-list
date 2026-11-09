@@ -48,6 +48,7 @@ import { aisleTerm, onAisleChange } from "./aisle-filter.js";
 import { closeSession, recentItems } from "./history.js";
 import { createRitual, userEssentialCandidates } from "./staples.js";
 import { splitVoiceTranscript, buildVoiceVocabulary } from "./voice.js";
+import { attachBulkAddUI } from "./bulk-add.js";
 import { parseTransferHash, applyTransfer, undoTransfer } from "./transfer.js";
 import { showTransferError } from "./transfer-ui.js";
 import {
@@ -898,6 +899,19 @@ async function boot() {
   wireSearch();
   wireVoice();
   wireActions();
+  attachBulkAddUI({
+    trigger: document.querySelector("[data-bulk-add-open]"),
+    panel: $("#bulk-add-panel"),
+    input: $("#bulk-add-text"),
+    status: $("#bulk-add-status"),
+    preview: $("#bulk-add-preview"),
+    confirm: $("#bulk-add-confirm"),
+    cancel: $("#bulk-add-cancel"),
+    getItems,
+    addItem,
+    resolve: resolveVoiceCandidate,
+    notify: showToast,
+  });
   renderEssentials();
   renderHistory();
   renderSuggestions();
