@@ -87,6 +87,30 @@ jobs:
           REF='${{ steps.ref.outputs.sha }}'
           SHORT='${{ steps.ref.outputs.short }}'
           BRANCH="ci/cookigram-catalog-$SHORT"
+          # Sync PR collision guard: begin
+          # The pinned ref is immutable: an already-open matching PR needs no push.
+          # Never overwrite an existing remote branch or replace an unrelated PR.
+          remote_ref="$(git ls-remote --heads origin "refs/heads/$BRANCH")"
+          if [ -n "$remote_ref" ]; then
+            existing_pr_count="$(gh pr list --state open --head "$BRANCH" --base main --json number --jq 'length')"
+            if [ "$existing_pr_count" != "1" ]; then
+              echo "::error::Existing branch $BRANCH has no unique open PR; refusing to overwrite it."
+              exit 1
+            fi
+            git fetch --no-tags --depth=1 origin "refs/heads/$BRANCH"
+            git show FETCH_HEAD:data/cookigram-catalog.json > /tmp/catalog.existing.json
+            if [ "$(python3 scripts/sync-catalog.py material-diff /tmp/catalog.existing.json /tmp/catalog.new.json)" != "unchanged" ]; then
+              echo "::error::Existing sync PR for $BRANCH has different catalog content; refusing to overwrite it."
+              exit 1
+            fi
+            if ! git show FETCH_HEAD:sw.js | grep -Fx "const CATALOG_REF7 = \"$SHORT\";" >/dev/null; then
+              echo "::error::Existing sync PR for $BRANCH has a mismatched service-worker cache token."
+              exit 1
+            fi
+            echo "Existing open sync PR already covers $REF; no push or PR update."
+            exit 0
+          fi
+          # Sync PR collision guard: end
           SUMMARY="$(python3 scripts/sync-catalog.py material-diff --summary data/cookigram-catalog.json /tmp/catalog.new.json)"
           ENTRIES="$(python3 -c 'import json,sys; print(json.load(open("/tmp/catalog.new.json"))["meta"]["source"]["files"][".gram/ingredients.yaml"]["entries"])')"
           mv /tmp/catalog.new.json data/cookigram-catalog.json
