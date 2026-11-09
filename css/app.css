@@ -757,6 +757,7 @@ main {
 /* ---- Secondary actions bar (copy/share/export) ---- */
 .actions-bar {
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:flex-end;
   gap:var(--space-2);
@@ -837,6 +838,49 @@ main {
   margin:0 2px;
   background:var(--line);
 }
+
+/* #53: opt-in multi-line entry, visible only on demand. */
+.bulk-add-panel {
+  padding:var(--space-3);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:var(--card);
+}
+.bulk-add-panel label { display:block; font-weight:700; margin-bottom:var(--space-2); }
+.bulk-add-panel textarea {
+  display:block;
+  width:100%;
+  min-height:120px;
+  padding:var(--space-3);
+  resize:vertical;
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  background:var(--paper);
+  color:var(--ink);
+  font:inherit;
+}
+.bulk-add-status { margin:var(--space-2) 0; color:var(--muted); font-size:.88rem; }
+.bulk-add-preview {
+  margin:0 0 var(--space-3);
+  max-height:140px;
+  overflow:auto;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.bulk-add-preview:empty { display:none; }
+.bulk-add-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:var(--space-2); }
+.bulk-add-actions button {
+  min-height:44px;
+  border:1px solid var(--line);
+  border-radius:var(--radius-full);
+  padding:var(--space-2) var(--space-4);
+  background:var(--cream);
+  color:var(--ink);
+  font:inherit;
+  cursor:pointer;
+}
+#bulk-add-confirm { background:var(--orange); border-color:var(--orange); color:#fff; }
+#bulk-add-confirm:disabled { opacity:.45; cursor:default; }
 
 /* ---- History: direct-add shortcut chips (no row + CTA pair) ---- */
 .history-list {

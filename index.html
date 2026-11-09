@@ -85,6 +85,15 @@
           </svg>
         </button>
         <span class="actions-separator" aria-hidden="true"></span>
+        <button type="button" class="shopping-action" data-bulk-add-open
+          aria-label="Ajouter plusieurs articles" title="Ajouter plusieurs articles"
+          aria-controls="bulk-add-panel" aria-expanded="false">
+          <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <rect x="8" y="6" width="19" height="24" rx="4" class="icon-paper"/>
+            <path d="M17.5 12v12M11.5 18h12" class="icon-ink"/>
+            <path d="M29 8l2-2M30 12h2" class="icon-accent"/>
+          </svg>
+        </button>
         <button type="button" class="shopping-action" data-copy-shopping
           aria-label="Copier la liste" title="Copier la liste">
           <svg class="shopping-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
@@ -124,6 +133,20 @@
           </svg>
         </button>
       </div>
+
+      <section id="bulk-add-panel" class="bulk-add-panel" aria-label="Ajouter plusieurs articles" hidden>
+        <label for="bulk-add-text">Un article par ligne</label>
+        <textarea id="bulk-add-text" rows="5" placeholder="Lait&#10;Tomates&#10;Riz"
+          aria-describedby="bulk-add-status"></textarea>
+        <p id="bulk-add-status" class="bulk-add-status" role="status" aria-live="polite">
+          Aucun nouvel article à ajouter
+        </p>
+        <p id="bulk-add-preview" class="bulk-add-preview" aria-label="Aperçu des articles"></p>
+        <div class="bulk-add-actions">
+          <button type="button" id="bulk-add-cancel">Annuler</button>
+          <button type="button" id="bulk-add-confirm" disabled>Ajouter</button>
+        </div>
+      </section>
 
       <!-- Lane mount: pantry-staple quick-add chips (essentials lane owns content) -->
       <section class="essentials" id="essentials" aria-labelledby="essentials-title">

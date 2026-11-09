@@ -16,6 +16,7 @@ const PRECACHE = [
   "./css/app.css",
   "./js/app.js",
   "./js/aisle-filter.js",
+  "./js/bulk-add.js",
   "./js/catalog.js",
   "./js/components.js",
   "./js/history.js",
