@@ -3,8 +3,8 @@
     "schema": 1,
     "source": {
       "repo": "https://github.com/CookiGram/cookigram",
-      "ref": "47951737524492559968a3fad3ad909cafd9f041",
-      "fetched_at": "2026-11-10T10:41:54Z",
+      "ref": "cc57ff5d5058a05539bce60bc53cf1629291a056",
+      "fetched_at": "2026-11-15T10:18:10Z",
       "files": {
         ".gram/ingredients.yaml": {
           "sha256": "57e63c008a6f6caf580ab734568c5d6b1c2111f0f3d3d0c8d4678e82c0ccf491",
